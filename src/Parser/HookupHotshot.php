@@ -8,7 +8,7 @@ use Symfony\Component\DomCrawler\Crawler;
 use App\Helper\VideoQualityHelper;
 
 /** @package App\Parser */
-class HookupHotshot extends HTMLParser {
+class HookupHotshot extends AbstractHTMLParser {
 
     protected function parseScenePageDetail(Crawler &$crawler, Video &$video) {
         $sources = $this->getArrayFromCrawler($crawler->filter('video source'));

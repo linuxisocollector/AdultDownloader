@@ -2,18 +2,12 @@
 
 namespace App\Command;
 
-use App\Downloaders\Aria2;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
-use App\Exceptions\InvalidChannelsException;
-use App\Exceptions\VideoExceptionInterface;
 use App\Helper\DirectoryHelper;
 use App\Helper\ProgressHelper;
 use App\Entity\Page;
@@ -21,11 +15,9 @@ use App\Entity\Video;
 use App\Helper\EntityManager;
 use DateTime;
 use App\Helper\DownloadHelper;
-use App\Parser\HookupHotshot;
 use Exception;
 use GuzzleHttp\Psr7\Response;
-use LoggerHelper;
-use Psr\Log\LoggerInterface;
+use App\Helper\LoggerHelper;
 
 abstract class AbstractDownloadCommand extends Command
 {
@@ -49,6 +41,7 @@ abstract class AbstractDownloadCommand extends Command
         
     }
 
+    protected abstract function getPageName();
     /**
      * Used as PK for Database stuff just enter a id that is not used
      *
@@ -132,6 +125,7 @@ abstract class AbstractDownloadCommand extends Command
      * @return Video[]
      */
     protected function getVideos() {
+        LoggerHelper::writeToConsole("Starting to fetch overview Pages",'info');
         $client = $this->downloadHelper->getClient();
         $page_num = $this->getFirstPage();
         $video_num = 0;
@@ -195,7 +189,7 @@ abstract class AbstractDownloadCommand extends Command
 
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        LoggerHelper::setIO(new SymfonyStyle($input, $output));
+        LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
         $path = $input->getArgument('path');
         $this->directoryHelper = new DirectoryHelper($path);
         $this->directoryHelper->setup_folder();
@@ -205,7 +199,7 @@ abstract class AbstractDownloadCommand extends Command
         if($this->page == null) {
             $this->page = new Page();
             $this->page->setId($this->getPageId());
-            $this->page->setName('HookupHotshot');
+            $this->page->setName($this->getPageName());
             $this->page->setUpdated(new DateTime());
             $em->persist($this->page);
             $em->flush($this->page);
@@ -216,8 +210,12 @@ abstract class AbstractDownloadCommand extends Command
         $parser = $this->getOverviewParser(); 
         $downloader = $this->getVideoDownloadClient($progresshelper);
         foreach ($videos as $key => $video) {
+            $next_video = null;
+            if(array_key_exists($key+1,$videos)) {
+                $next_video = $videos[$key+1];
+            }
             if($video->getDownloadedVideo() === true) {
-                $progresshelper->AdvancePrimary($video);
+                $progresshelper->AdvancePrimary($next_video);
                 continue;
             }
             try {
@@ -232,16 +230,16 @@ abstract class AbstractDownloadCommand extends Command
                     $this->directoryHelper->getRealPath('videos'),
                     $video->getFilename()
                 );
-                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()."Finished",'info');
+                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()." Finished",'info');
                 $video->setDownloadedVideo(true);
                 $em = EntityManager::get();
                 $em->persist($video);
                 $em->flush($video);
             } catch(Exception $ex) {
-                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()."Finished",'error');
+                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()."failed ".$ex->getMessage(),'error');
             }
        
-            $progresshelper->AdvancePrimary($video);
+            $progresshelper->AdvancePrimary($next_video);
 
             sleep(2);
         }

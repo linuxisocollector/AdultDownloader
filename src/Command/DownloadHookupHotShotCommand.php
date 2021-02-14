@@ -29,6 +29,10 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
 {
     protected static $defaultName = 'download:hookuphotshot';
 
+    protected function getPageName() {
+        return 'HookupHotshot';
+    }
+
     protected function getPageId() {
         return 1;
     }

@@ -1,5 +1,5 @@
 <?php
-
+namespace App\Helper;
 class LoggerHelper {
     private static $io;
     public static function setIO($io) {
@@ -25,6 +25,6 @@ class LoggerHelper {
             $text = '<error>'.$text.'</error>';
 
         }
-        $this->io->writeln($text);
+        self::$io->writeln($text);
     }
 }

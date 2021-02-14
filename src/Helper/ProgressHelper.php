@@ -9,13 +9,20 @@ class ProgressHelper {
     private $videos;
     private $progressBar1;
     private $progressBar2;
-
-    public function __construct($videos,$output)
+    /** @var \Symfony\Component\Console\Output\ConsoleSectionOutput */
+    private $section2;
+    /**
+     * Undocumented function
+     *
+     * @param Video[] $videos
+     * @param \Symfony\Component\Console\Output\ConsoleSectionOutput $output
+     */
+    public function __construct($videos,\Symfony\Component\Console\Output\OutputInterface $output )
     {
         $this->videos = $videos;
         $section1 = $output->section();
         $section2 = $output->section();
-       
+        $this->section2 = $section2;
 
         $this->progressBar1 = new ProgressBar($section1, count($this->videos));
         $this->progressBar1->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %message%');
@@ -27,6 +34,7 @@ class ProgressHelper {
 
         //progress to current status
         $em = EntityManager::get()->getRepository('App\Entity\Video');
+
         $downloaded_vids = $em->findBy([
             'page' => $this->videos[0]->getPage()->getId(),
             'downloaded_video' => true
@@ -42,11 +50,12 @@ class ProgressHelper {
     public function AdvancePrimary(Video $video) {
         $this->progressBar1->setMessage($video->getMetadata()->getSceneName());
         $this->progressBar1->advance();
+        $this->progressBar2->finish();
+        $this->progressBar2->start();
     }
 
     public function AdvanceDownloadStatus($percentage,$size_download) {
         $this->progressBar2->setMessage("from ". $size_download);
         $this->progressBar2->setProgress($percentage);
-
     }
 }
