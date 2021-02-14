@@ -1,0 +1,14 @@
+# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.hookuphotshot.com	TRUE	/	FALSE	2147455037	accept_terms	yes
+.hookuphotshot.com	TRUE	/	FALSE	1613243887	has_closed_epoch_div	yes
+#HttpOnly_.hookuphotshot.com	TRUE	/	FALSE	1615749569	nats	MC4wLjEuMS4wLjAuMC4wLjA
+#HttpOnly_.hookuphotshot.com	TRUE	/	FALSE	1615749569	nats_cookie	https%253A%252F%252Fhookuphotshot.com%252F
+#HttpOnly_.hookuphotshot.com	TRUE	/	FALSE	1613243969	nats_unique	MC4wLjEuMS4wLjAuMC4wLjA
+#HttpOnly_.hookuphotshot.com	TRUE	/	FALSE	1615749569	nats_landing	No%2BLanding%2BPage%2BURL
+#HttpOnly_.hookuphotshot.com	TRUE	/	FALSE	1621793969	nats_sess	0e84835b285106229a7dba17d7ddbc30
+#HttpOnly_hookuphotshot.com	FALSE	/	TRUE	1614410522	wordpress_logged_in_a3c1a814721d01d1e4e637a812084f64	dedamian000%7C1614367322%7CYzoYPQy9YmG7zQj2w0Bsu3NQ6KsY2b5uKfG8IzNoSQF%7C58530a867c97876bc2dc7d74c706fb262c1cb754f93497d794c7fe12ec411182
+hookuphotshot.com	FALSE	/	FALSE	0	PHPSESSID	0739fab4535329c06cf3dd6e20028327
+hookuphotshot.com	FALSE	/	TRUE	0	wordpress_test_cookie	WP+Cookie+check

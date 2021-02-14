@@ -1,0 +1,21 @@
+{
+    "name": "pornwarez/downloaders",
+    "type": "project",
+    "minimum-stability": "dev",
+    "require": {
+        "symfony/finder": "5.x-dev",
+        "symfony/var-dumper": "5.x-dev",
+        "symfony/console": "5.x-dev",
+        "doctrine/orm": "2.8.x-dev",
+        "daijie/aria2": "dev-master",
+        "jsonrpc/jsonrpc": "dev-master",
+        "guzzlehttp/guzzle": "^7.2",
+        "kegi/netscape-cookie-file-handler": "dev-master",
+        "symfony/dom-crawler": "5.x-dev",
+        "symfony/css-selector": "5.x-dev",
+        "cocur/background-process": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {"App\\": "src/"}
+    }
+}
