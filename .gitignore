@@ -4,3 +4,5 @@ vendor/
 look_pid
 
 aria2.output
+
+test/

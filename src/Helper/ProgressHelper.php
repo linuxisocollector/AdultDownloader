@@ -9,12 +9,10 @@ class ProgressHelper {
     private $videos;
     private $progressBar1;
     private $progressBar2;
-    private $io;
 
-    public function __construct($videos,$output,$io)
+    public function __construct($videos,$output)
     {
         $this->videos = $videos;
-        $this->io = $io;
         $section1 = $output->section();
         $section2 = $output->section();
        

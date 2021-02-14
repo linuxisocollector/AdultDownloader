@@ -13,7 +13,8 @@
         "kegi/netscape-cookie-file-handler": "dev-master",
         "symfony/dom-crawler": "5.x-dev",
         "symfony/css-selector": "5.x-dev",
-        "cocur/background-process": "dev-master"
+        "cocur/background-process": "dev-master",
+        "haydenpierce/class-finder": "dev-master"
     },
     "autoload": {
         "psr-4": {"App\\": "src/"}

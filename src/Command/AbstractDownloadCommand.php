@@ -23,23 +23,26 @@ use DateTime;
 use App\Helper\DownloadHelper;
 use App\Parser\HookupHotshot;
 use Exception;
+use GuzzleHttp\Psr7\Response;
+use LoggerHelper;
 use Psr\Log\LoggerInterface;
 
-abstract class DownloadHookupHotShotCommand extends Command
+abstract class AbstractDownloadCommand extends Command
 {
-    protected static $defaultName = 'download:hookuphotshot';
+    /** Dont forgett to overwritte this aswell, this is the command name */
+    protected static $defaultName = '';
 
-    protected $page_id = 1;
+    /** @var App\Entity\Page */
+    protected $page;
     /** @var App\Helper\DirectoryHelper; */
     protected $directoryHelper;
-    /** @var \Symfony\Component\Console\Style\SymfonyStyle */
-    protected $io;
     /** @var App\Helper\DownloadHelper */
     private $downloadHelper;
+    
     protected function configure()
     {
         $this
-            ->setDescription('Add a short description for your command')
+            ->setDescription('Downloader for '.$this->getBaseUrl())
             ->addArgument('path', InputArgument::REQUIRED, 'Path')
             ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
         ;
@@ -79,21 +82,22 @@ abstract class DownloadHookupHotShotCommand extends Command
     /**
      * A logic that determines if a return page has videos on it or is a 404
      * This is only needed if the page to scrub doesn't return 404 on pages that it doesnt find
-     * Otherwhise just return false
+     * Throw an exception if we reached the last page
      * @param String $html
-     * @return boolean
+     * @return void
+     * @throws Exception
      */
-    protected abstract function lastPageReached(String $html);
+    protected abstract function lastPageReached(Response $html);
 
 
 
     /**
      * Get the constructed download Client at the Moment only Aria2 is implemented.
      * HLS Streams and similar ar not yet implemented
-     *
+     * @param ProgressHelper $progressHelper
      * @return AbstractDownloader
      */
-    protected abstract function getVideoDownloadClient();
+    protected abstract function getVideoDownloadClient(ProgressHelper $progressHelper);
 
     /**
      * Return your customer scraper through this function. Instance of AbstractHTMLParser class
@@ -112,7 +116,7 @@ abstract class DownloadHookupHotShotCommand extends Command
      * @param [type] $url
      * @return void
      */
-    private function getCached($url) {
+    protected function getCached($url) {
         $filepath  = $this->directoryHelper->getRealPath('cache').md5($url);
         if(is_file($filepath)) {
             return file_get_contents($filepath);
@@ -127,7 +131,7 @@ abstract class DownloadHookupHotShotCommand extends Command
      *
      * @return Video[]
      */
-    private function getVideos() {
+    protected function getVideos() {
         $client = $this->downloadHelper->getClient();
         $page_num = $this->getFirstPage();
         $video_num = 0;
@@ -143,16 +147,18 @@ abstract class DownloadHookupHotShotCommand extends Command
                     $body = $res->getBody();
                     //save to cache
                     file_put_contents($this->directoryHelper->getRealPath('cache').md5($url),$body);
-                    $this->io->note("Downloaded Overview Page: $page_num");
+                    LoggerHelper::writeToConsole("Downloaded Overview Page: $page_num",'info');
+                    
+                    //echo "Downloaded Overview Page: $page_num\n";
                 } catch(Exception $ex) {
-                    $this->io->note("Possibly reached last page Pages: $page_num");
+                    LoggerHelper::writeToConsole("Possibly reached last page Pages: $page_num",'info');
                     break;
                 }
                 sleep(2);
             }
             $bodies[$url] = $body;
         }
-        $this->io->note("Finished Downloading Overview Pages, Parsing Metadata now");
+        LoggerHelper::writeToConsole("Finished Downloading Overview Pages, Parsing Metadata now",'info');
         $metadata_parser = $this->getOverviewParser();
         $videos = [];
         foreach ($bodies as $key => $html) {
@@ -183,13 +189,13 @@ abstract class DownloadHookupHotShotCommand extends Command
             'page' => $this->page->getId(),
         ]);
         $video_count = count($videos_saved);
-        $this->io->note("Found $video_count from which $new_vids are new");
+        LoggerHelper::writeToConsole("Found $video_count from which $new_vids are new",'info');
         return $videos_saved;
     }
 
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        $this->io = new SymfonyStyle($input, $output->section());
+        LoggerHelper::setIO(new SymfonyStyle($input, $output));
         $path = $input->getArgument('path');
         $this->directoryHelper = new DirectoryHelper($path);
         $this->directoryHelper->setup_folder();
@@ -206,7 +212,7 @@ abstract class DownloadHookupHotShotCommand extends Command
         }
         $this->downloadHelper  = new DownloadHelper($this->getBaseUrl());
         $videos = $this->getVideos();
-        $progresshelper = new ProgressHelper($videos,$output,$this->io);
+        $progresshelper = new ProgressHelper($videos,$output);
         $parser = $this->getOverviewParser(); 
         $downloader = $this->getVideoDownloadClient($progresshelper);
         foreach ($videos as $key => $video) {
@@ -220,19 +226,19 @@ abstract class DownloadHookupHotShotCommand extends Command
                 $client->request('GET',$video->getMetadata()->getThumbnailUrl(),[
                     'sink' => $this->directoryHelper->getRealPath('metadata').$video->getId().".jpg"
                 ]);
-                $this->io->info('Fetched Scene Metadata');
+                LoggerHelper::writeToConsole('Fetched Scene Metadata','info');
                 $downloader->downloadFile(
                     $video->getDownloadUrl(),
                     $this->directoryHelper->getRealPath('videos'),
                     $video->getFilename()
                 );
-                $this->io->info('Download of Scene'.$video->getFilename()."Finished");
+                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()."Finished",'info');
                 $video->setDownloadedVideo(true);
                 $em = EntityManager::get();
                 $em->persist($video);
                 $em->flush($video);
             } catch(Exception $ex) {
-                $this->io->error($ex->getMessage(). "VKey: ".$key. " ".$video->getMetadata()->getSceneName());
+                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()."Finished",'error');
             }
        
             $progresshelper->AdvancePrimary($video);

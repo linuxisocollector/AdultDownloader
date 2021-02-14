@@ -8,7 +8,7 @@ use DateTime;
 use Exception;
 use Symfony\Component\DomCrawler\Crawler;
 
-abstract class HTMLParser  {
+abstract class AbstractHTMLParser  {
     public function __construct() {
 
     }
@@ -75,11 +75,8 @@ abstract class HTMLParser  {
         return $video;
     }
 
-    protected function getEmptyVideoObject() {
-        return new Video();
-    }
     /**
-     * R
+     * Returns a array from a filtered crawler (I hate anonymous functions)
      *
      * @param Crawler $crawler
      * @return Crawler[]
