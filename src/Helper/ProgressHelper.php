@@ -3,21 +3,22 @@ namespace App\Helper;
 
 use App\Entity\Video;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 class ProgressHelper {
 
     private $videos;
     private $progressBar1;
     private $progressBar2;
-    /** @var \Symfony\Component\Console\Output\ConsoleSectionOutput */
+    /** @var ConsoleSectionOutput */
     private $section2;
     /**
      * Undocumented function
      *
      * @param Video[] $videos
-     * @param \Symfony\Component\Console\Output\ConsoleSectionOutput $output
+     * @param ConsoleSectionOutput $output
      */
-    public function __construct($videos,\Symfony\Component\Console\Output\OutputInterface $output )
+    public function __construct($videos,ConsoleOutput $output )
     {
         $this->videos = $videos;
         $section1 = $output->section();

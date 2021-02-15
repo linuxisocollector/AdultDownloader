@@ -241,4 +241,8 @@ class Video
         $extension = explode("?",$extension)[0];
         return $name.".".$extension;
     }
+
+    public function getFilePath() : string {
+        return DirectoryHelper::getRealPath('videos').$this->getFilename();
+    }
 }

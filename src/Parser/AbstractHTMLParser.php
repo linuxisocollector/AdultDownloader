@@ -33,10 +33,12 @@ abstract class AbstractHTMLParser  {
 
         $metadata->setBehindeTheScenes($bts);
         $video->setMetadata($metadata);
+
+        return $bts;
     }
     public function ParsePage($html,$url) {
         $videos = [];
-        $filtered = $this->getVideoParentObject(new Crawler($html));
+        $filtered = $this->getVideoParentObject(new Crawler((string)$html));
         foreach ($filtered as $key => $value) {
             $video = new Video();
             $metadata = new MetadataObject();

@@ -26,8 +26,6 @@ abstract class AbstractDownloadCommand extends Command
 
     /** @var App\Entity\Page */
     protected $page;
-    /** @var App\Helper\DirectoryHelper; */
-    protected $directoryHelper;
     /** @var App\Helper\DownloadHelper */
     private $downloadHelper;
     
@@ -110,7 +108,7 @@ abstract class AbstractDownloadCommand extends Command
      * @return void
      */
     protected function getCached($url) {
-        $filepath  = $this->directoryHelper->getRealPath('cache').md5($url);
+        $filepath  = DirectoryHelper::getRealPath('cache').md5($url);
         if(is_file($filepath)) {
             return file_get_contents($filepath);
         }
@@ -140,7 +138,7 @@ abstract class AbstractDownloadCommand extends Command
                     $this->lastPageReached($res);
                     $body = $res->getBody();
                     //save to cache
-                    file_put_contents($this->directoryHelper->getRealPath('cache').md5($url),$body);
+                    file_put_contents(DirectoryHelper::getRealPath('cache').md5($url),$body);
                     LoggerHelper::writeToConsole("Downloaded Overview Page: $page_num",'info');
                     
                     //echo "Downloaded Overview Page: $page_num\n";
@@ -189,10 +187,11 @@ abstract class AbstractDownloadCommand extends Command
 
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
+        /** @var \Symfony\Component\Console\Output\ConsoleOutput $output */
         LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
         $path = $input->getArgument('path');
-        $this->directoryHelper = new DirectoryHelper($path);
-        $this->directoryHelper->setup_folder();
+        $directoryHelper = new DirectoryHelper($path);
+        $directoryHelper->setup_folder();
         $em = EntityManager::get();
 
         $this->page = $em->find('App\Entity\Page',$this->getPageId());
@@ -222,12 +221,12 @@ abstract class AbstractDownloadCommand extends Command
                 $video = $parser->parseScenePage($video,$this->downloadHelper);
                 $client = $this->downloadHelper->getClient();
                 $client->request('GET',$video->getMetadata()->getThumbnailUrl(),[
-                    'sink' => $this->directoryHelper->getRealPath('metadata').$video->getId().".jpg"
+                    'sink' => DirectoryHelper::getRealPath('metadata').$video->getId().".jpg"
                 ]);
                 LoggerHelper::writeToConsole('Fetched Scene Metadata','info');
                 $downloader->downloadFile(
                     $video->getDownloadUrl(),
-                    $this->directoryHelper->getRealPath('videos'),
+                    DirectoryHelper::getRealPath('videos'),
                     $video->getFilename()
                 );
                 LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()." Finished",'info');

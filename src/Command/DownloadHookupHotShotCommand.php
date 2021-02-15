@@ -3,27 +3,9 @@
 namespace App\Command;
 
 use App\Downloaders\Aria2;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
-use App\Exceptions\InvalidChannelsException;
-use App\Exceptions\VideoExceptionInterface;
-use App\Helper\DirectoryHelper;
 use App\Helper\ProgressHelper;
-use App\Entity\Page;
-use App\Entity\Video;
-use App\Helper\EntityManager;
-use DateTime;
-use App\Helper\DownloadHelper;
 use App\Parser\HookupHotshot;
 use Exception;
-use Psr\Log\LoggerInterface;
 
 class DownloadHookupHotShotCommand extends AbstractDownloadCommand
 {

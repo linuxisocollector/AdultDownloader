@@ -14,7 +14,8 @@
         "symfony/dom-crawler": "5.x-dev",
         "symfony/css-selector": "5.x-dev",
         "cocur/background-process": "dev-master",
-        "haydenpierce/class-finder": "dev-master"
+        "haydenpierce/class-finder": "dev-master",
+        "php-ffmpeg/php-ffmpeg": "0.x-dev"
     },
     "autoload": {
         "psr-4": {"App\\": "src/"}
