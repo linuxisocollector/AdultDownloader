@@ -33,7 +33,7 @@ class DirectoryHelper {
             mkdir(self::$download_base_path);
         }
         
-        foreach ($this->folders as $key => $value) {
+        foreach (self::$folders as $key => $value) {
             $real_path = $this->getRealPath($value);
             if(!is_dir($real_path)) {
                 mkdir($real_path);

@@ -1,5 +1,5 @@
 <?php
-namespace App\Parser;
+namespace App\Entity;
 
 use DateTime;
 
@@ -17,6 +17,7 @@ class MetadataObject {
     private $BehindeTheScenes;
     private $thumbnail_url;
 
+    private $description;
     
     function __construct()
     {
@@ -163,6 +164,26 @@ class MetadataObject {
     public function setBehindeTheScenes(bool $BehindeTheScenes) : self
     {
         $this->BehindeTheScenes = $BehindeTheScenes;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of description
+     */
+    public function getDescription()
+    {
+        return $this->description;
+    }
+
+    /**
+     * Set the value of description
+     *
+     * @return self
+     */
+    public function setDescription($description) : self
+    {
+        $this->description = $description;
 
         return $this;
     }

@@ -2,6 +2,8 @@
 
 namespace App\Command;
 
+use App\Downloaders\IBasicAuth;
+use App\Downloaders\ICookie;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,6 +14,7 @@ use App\Helper\DirectoryHelper;
 use App\Helper\ProgressHelper;
 use App\Entity\Page;
 use App\Entity\Video;
+use App\Helper\CookieHelper;
 use App\Helper\EntityManager;
 use DateTime;
 use App\Helper\DownloadHelper;
@@ -26,18 +29,43 @@ abstract class AbstractDownloadCommand extends Command
 
     /** @var App\Entity\Page */
     protected $page;
+    
     /** @var App\Helper\DownloadHelper */
     private $downloadHelper;
+    protected $basic_auth = false;
+    protected $cookie_auth = false;
+    /** @var CookieHelper */
+    protected $CookieHelper;
+
+    protected $basic_username;
+    protected $basic_password;
     
     protected function configure()
     {
         $this
             ->setDescription('Downloader for '.$this->getBaseUrl())
             ->addArgument('path', InputArgument::REQUIRED, 'Path')
-            ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
         ;
-        
+
+        $this->addAdditonalArguments();
     }
+
+    protected function requireCookieFile() {
+        $this->cookie_auth = true;
+        $this->addArgument('cookie', InputArgument::REQUIRED, 'Path to Netscape Cookie File (Firefox)');
+    }
+
+    protected function requireBasicAuth() {
+        $this->basic_auth = true;
+        $this->addArgument('username',InputArgument::REQUIRED,'Username for Basic Auth');
+        $this->addArgument('password',InputArgument::REQUIRED,'Passwor for Basic Auth');
+    }
+    /**
+     * Add additonal Console arguments through this function 
+     * @see https://symfony.com/doc/current/console/input.html#using-command-arguments
+     * @return void
+     */
+    protected abstract function addAdditonalArguments();
 
     protected abstract function getPageName();
     /**
@@ -88,7 +116,7 @@ abstract class AbstractDownloadCommand extends Command
      * @param ProgressHelper $progressHelper
      * @return AbstractDownloader
      */
-    protected abstract function getVideoDownloadClient(ProgressHelper $progressHelper);
+    protected abstract function loadFileDownloader(ProgressHelper $progressHelper);
 
     /**
      * Return your customer scraper through this function. Instance of AbstractHTMLParser class
@@ -96,6 +124,7 @@ abstract class AbstractDownloadCommand extends Command
      * @return AbstractHTMLParser
      */
     protected abstract function getOverviewParser();
+
 
     /**
      * REST SHOULD NOT BE CHANGED WHEN IMPLEMENTING A NEW PAGE
@@ -130,11 +159,10 @@ abstract class AbstractDownloadCommand extends Command
         $bodies = [];
         while(true) {
             $url = str_replace('{num}',$page_num,$this->getVideoPath());
-            $page_num++;
             $body = $this->getCached($url);
             if($body === false) {
                 try {
-                    $res = $client->request('GET',$url);
+                    $res = $client->request('GET',$url,[]);
                     $this->lastPageReached($res);
                     $body = $res->getBody();
                     //save to cache
@@ -148,6 +176,7 @@ abstract class AbstractDownloadCommand extends Command
                 }
                 sleep(2);
             }
+            $page_num++;
             $bodies[$url] = $body;
         }
         LoggerHelper::writeToConsole("Finished Downloading Overview Pages, Parsing Metadata now",'info');
@@ -185,15 +214,24 @@ abstract class AbstractDownloadCommand extends Command
         return $videos_saved;
     }
 
+    private function getDownloadImplementation($class) {
+        if($this->cookie_auth === true) {
+            if(!($class instanceof ICookie)) {
+                LoggerHelper::writeToConsole('The Class '.$class::class.' does not implement the Cookie interface','error');
+            }
+            $class->setCookies($this->CookieHelper);
+        }
+        if($this->basic_auth === true) {
+            if(!($class instanceof IBasicAuth)) {
+                LoggerHelper::writeToConsole('The Class '.$class::class.' does not support BasicAuth','error');
+            }
+            $class->setBasicAuth($this->basic_username,$this->basic_password);
+        } 
 
-    protected function execute(InputInterface $input, OutputInterface $output): int {
-        /** @var \Symfony\Component\Console\Output\ConsoleOutput $output */
-        LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
-        $path = $input->getArgument('path');
-        $directoryHelper = new DirectoryHelper($path);
-        $directoryHelper->setup_folder();
+        return $class;
+    }
+    protected function loadorCreatePage() {
         $em = EntityManager::get();
-
         $this->page = $em->find('App\Entity\Page',$this->getPageId());
         if($this->page == null) {
             $this->page = new Page();
@@ -203,11 +241,25 @@ abstract class AbstractDownloadCommand extends Command
             $em->persist($this->page);
             $em->flush($this->page);
         }
-        $this->downloadHelper  = new DownloadHelper($this->getBaseUrl());
-        $videos = $this->getVideos();
+    } 
+
+    protected function setUpAdditonalCommands($input) {
+        if($this->basic_auth === true) {
+            $this->basic_username = $input->getArgument('username');
+            $this->basic_password = $input->getArgument('password');    
+        }
+
+        if($this->cookie_auth === true) {
+            $cookie_file_path = $input->getArgument('cookie');
+            $this->CookieHelper = new CookieHelper($cookie_file_path,$this->getBaseUrl());
+        }
+        
+    }
+
+    protected function downloadVideos($output,$videos) {
         $progresshelper = new ProgressHelper($videos,$output);
-        $parser = $this->getOverviewParser(); 
-        $downloader = $this->getVideoDownloadClient($progresshelper);
+        $parser = $this->getOverviewParser();
+        $downloader = $this->getDownloadImplementation($this->loadFileDownloader($progresshelper));
         foreach ($videos as $key => $video) {
             $next_video = null;
             if(array_key_exists($key+1,$videos)) {
@@ -221,7 +273,7 @@ abstract class AbstractDownloadCommand extends Command
                 $video = $parser->parseScenePage($video,$this->downloadHelper);
                 $client = $this->downloadHelper->getClient();
                 $client->request('GET',$video->getMetadata()->getThumbnailUrl(),[
-                    'sink' => DirectoryHelper::getRealPath('metadata').$video->getId().".jpg"
+                    'sink' => DirectoryHelper::getRealPath('metadata').$video->getId().".jpg",
                 ]);
                 LoggerHelper::writeToConsole('Fetched Scene Metadata','info');
                 $downloader->downloadFile(
@@ -229,20 +281,36 @@ abstract class AbstractDownloadCommand extends Command
                     DirectoryHelper::getRealPath('videos'),
                     $video->getFilename()
                 );
-                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()." Finished",'info');
+                LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." Finished",'info');
                 $video->setDownloadedVideo(true);
                 $em = EntityManager::get();
                 $em->persist($video);
                 $em->flush($video);
             } catch(Exception $ex) {
-                LoggerHelper::writeToConsole('Download of Scene'.$video->getFilename()."failed ".$ex->getMessage(),'error');
+                LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." failed ".$ex->getMessage(),'error');
             }
        
             $progresshelper->AdvancePrimary($next_video);
 
             sleep(2);
         }
+    }
 
+    protected function execute(InputInterface $input, OutputInterface $output): int {
+        /** @var \Symfony\Component\Console\Output\ConsoleOutput $output */
+        LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
+        $path = $input->getArgument('path');
+        $this->loadorCreatePage();
+        $this->setUpAdditonalCommands($input);
+        $directoryHelper = new DirectoryHelper($path);
+        $directoryHelper->setup_folder();
+
+        /** @var DownloadHelper */
+        $this->downloadHelper  = $this->getDownloadImplementation(new DownloadHelper($this->getBaseUrl()));
+        
+        $videos = $this->getVideos();
+
+        $this->downloadVideos($output,$videos);
         return Command::SUCCESS;
     }
 }

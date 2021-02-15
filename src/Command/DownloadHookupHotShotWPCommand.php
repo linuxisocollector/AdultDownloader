@@ -5,18 +5,21 @@ namespace App\Command;
 use App\Downloaders\Aria2;
 use App\Helper\ProgressHelper;
 use App\Parser\HookupHotshot;
-use App\Parser\HookupHotshotNew;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Exception;
 
-class DownloadHookupHotShotCommand extends AbstractDownloadCommand
+class DownloadHookupHotShotWPCommand extends AbstractDownloadCommand
 {
-    protected static $defaultName = 'download:hookuphotshot';
+    protected static $defaultName = 'download:hookuphotshotWordPress';
 
     protected function addAdditonalArguments() {
-        $this->requireBasicAuth();
-
+        $this->requireCookieFile();
     }
 
+    protected function getBasicAuth() {
+        return false;
+    }
 
     protected function getPageName() {
         return 'HookupHotshot';
@@ -31,21 +34,21 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
     protected function getFirstPage() { 
-        return 1;
+        return 0;
     }
 
     protected function getVideoPath() {
-        return 'members/categories/movies/{num}/latest/';
+        return '/the-dates/page/{num}/';
     }
 
     protected function lastPageReached($response) {
-        if(str_contains($response->getBody(),'Nothing found here.')) {
+        if(str_contains($response->getBody(),'Sorry... there are no more dates. Click ')) {
             throw new Exception('Reached end');
         }
     }
 
     protected function getOverviewParser() {
-        return new HookupHotshotNew();
+        return new HookupHotshot();
     }
 
 

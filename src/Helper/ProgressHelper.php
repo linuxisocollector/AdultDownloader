@@ -27,7 +27,9 @@ class ProgressHelper {
 
         $this->progressBar1 = new ProgressBar($section1, count($this->videos));
         $this->progressBar1->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %message%');
-        $this->progressBar1->setMessage($this->videos[0]->getMetadata()->getSceneName());
+        if(count($this->videos) > 0) {
+            $this->progressBar1->setMessage($this->videos[0]->getMetadata()->getSceneName());
+        }
         $this->progressBar2 = new ProgressBar($section2, 100);
         $this->progressBar2->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %message%');
         // starts and displays the progress bar

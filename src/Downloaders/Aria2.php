@@ -1,14 +1,18 @@
 <?php
 namespace App\Downloaders;
 
+use App\Helper\CookieHelper;
 use App\Helper\ProgressHelper;
 use Cocur\BackgroundProcess\BackgroundProcess;
 use Exception;
 
-class Aria2 implements AbstractDownloader {
+class Aria2 implements AbstractDownloader, ICookie, IBasicAuth {
     /** @var \Aria2 */
     private $aria2;
     private $progressHelper;
+    private $basic_username = false;
+    private $basic_password = false;
+    private $additonalHeader = [];
     public function __construct(ProgressHelper $progressHelper)
     {
         $cmd = '/usr/bin/aria2c --enable-rpc --rpc-listen-port 6800';
@@ -20,18 +24,37 @@ class Aria2 implements AbstractDownloader {
         register_shutdown_function('App\Downloaders\Aria2::killprocess');
     }
 
+    public function setCookies(CookieHelper $cookies) {
+        $this->additonalHeader[] = $cookies->getCookieHeaderString();
+    }
+
+    public function setBasicAuth($username, $password) {
+        $this->basic_username = $username;
+        $this->basic_password = $password;
+    }
+
     public static function killprocess() {
         posix_kill ((int)rtrim(file_get_contents('look_pid')), 0 );
         
     }
 
     public function downloadFile($url,$dir,$name) {
+        $params = [
+            'dir'=> $dir,
+            'out'=> $name,
+            'max-connection-per-server' => 16,
+        ];
+        if($this->basic_password !== false && $this->basic_username !== false) {
+            $params['http-user'] = $this->basic_username;
+            $params['http-passwd'] = $this->basic_password;
+        }
+        
+        if(count($this->additonalHeader) > 0) {
+            $params['header'] = $this->additonalHeader[0];
+        }
         $resp = $this->aria2->addUri(
             [$url],
-            [
-                'dir'=> $dir,
-                'out'=> $name
-        ],
+            $params
         );
         //not async for the moment
         while(true) {

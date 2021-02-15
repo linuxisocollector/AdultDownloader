@@ -4,6 +4,7 @@ namespace App\Parser;
 use App\Entity\Video;
 use App\Helper\DownloadHelper;
 use App\Helper\EntityManager;
+use App\Entity\MetadataObject;
 use DateTime;
 use Exception;
 use Symfony\Component\DomCrawler\Crawler;
@@ -12,11 +13,32 @@ abstract class AbstractHTMLParser  {
     public function __construct() {
 
     }
-
+    /**
+     * Should get the scene container where all the videos elements are in the overview page
+     *
+     * @param Crawler $html
+     * @return Crawler[]
+     */
     protected abstract function getVideoParentObject(Crawler $html);
 
+    /**
+     * Parse a single Video Preview element from a overview page
+     * At a absolute minimum the Url has to be set after using this function
+     *
+     * @param Crawler $crawler
+     * @param Video $video
+     * @param MetadataObject $metadata
+     * @return void
+     */
     protected abstract function parseOverviewVideo(Crawler &$crawler, Video &$video,MetadataObject &$metadata);
 
+    /**
+     * Parse Scene Date from the Detail view
+     *
+     * @param Crawler $crawler
+     * @param Video $video
+     * @return void
+     */
     protected abstract function parseScenePageDetail(Crawler &$crawler, Video &$video);
 
     private function isBehindeTheScences(Video $video) {
@@ -66,7 +88,9 @@ abstract class AbstractHTMLParser  {
     public function parseScenePage(Video $video, DownloadHelper $downloadHelper) {
         //always invalidate scene cache.
         $client = $downloadHelper->getClient();
-        $resp = $client->request('GET',$video->getUrl());
+        $resp = $client->request('GET',$video->getUrl(),[]
+        );
+
         $crawler = new Crawler((string)$resp->getBody());
         $video->setFetchedTime(new DateTime());
         $video->setGrabbedHtml(true);

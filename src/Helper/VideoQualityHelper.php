@@ -12,7 +12,6 @@ class VideoQualityHelper {
      */
     public static function pickQuality( $urls, Video $video) {
         if($video->getMetadata()->getBehindeTheScenes()) {
-            //default to 720p
             if(array_key_exists('720',$urls)) {
                 return '720';
             }

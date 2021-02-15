@@ -2,7 +2,7 @@
 namespace App\Entity;
 
 use App\Helper\DirectoryHelper;
-use App\Parser\MetadataObject;
+use App\Entity\MetadataObject;
 
 /** @Entity */
 class Video

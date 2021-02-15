@@ -6,3 +6,9 @@ look_pid
 aria2.output
 
 test/
+
+metadata/
+
+cookies/
+
+var/

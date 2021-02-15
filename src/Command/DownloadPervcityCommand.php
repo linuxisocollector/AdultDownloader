@@ -4,30 +4,27 @@ namespace App\Command;
 
 use App\Downloaders\Aria2;
 use App\Helper\ProgressHelper;
-use App\Parser\HookupHotshot;
-use App\Parser\HookupHotshotNew;
+use App\Parser\Pervcity;
 use Exception;
 
-class DownloadHookupHotShotCommand extends AbstractDownloadCommand
+class DownloadPervcityCommand extends AbstractDownloadCommand
 {
-    protected static $defaultName = 'download:hookuphotshot';
+    protected static $defaultName = 'download:pervcity';
 
     protected function addAdditonalArguments() {
-        $this->requireBasicAuth();
-
+        $this->requireCookieFile();
     }
 
-
     protected function getPageName() {
-        return 'HookupHotshot';
+        return 'Pervcity';
     }
 
     protected function getPageId() {
-        return 1;
+        return 2;
     }
 
     protected function getBaseUrl() {
-        return 'https://hookuphotshot.com/';
+        return 'https://members.pervcity.com/';
     }
 
     protected function getFirstPage() { 
@@ -35,17 +32,17 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
     protected function getVideoPath() {
-        return 'members/categories/movies/{num}/latest/';
+        return '/categories/movies_{num}_d.html';
     }
 
     protected function lastPageReached($response) {
-        if(str_contains($response->getBody(),'Nothing found here.')) {
+        if(strlen($response->getBody()) < 43000) {
             throw new Exception('Reached end');
         }
     }
 
     protected function getOverviewParser() {
-        return new HookupHotshotNew();
+        return new Pervcity();
     }
 
 

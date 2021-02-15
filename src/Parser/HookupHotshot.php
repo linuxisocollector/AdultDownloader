@@ -3,7 +3,7 @@ namespace App\Parser;
 
 use App\Entity\Video;
 use DateTime;
-use App\Parser\MetadataObject;
+use App\Entity\MetadataObject;
 use Symfony\Component\DomCrawler\Crawler;
 use App\Helper\VideoQualityHelper;
 
@@ -24,9 +24,7 @@ class HookupHotshot extends AbstractHTMLParser {
 
 
     protected function getVideoParentObject(Crawler $crawler) {
-        $videos = [];
         $filterd = $this->getArrayFromCrawler($crawler->filter('#et-projects li'));
-        
         return $filterd;
     }
 
