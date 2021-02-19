@@ -23,12 +23,19 @@ class DirectoryHelper {
         }
         return self::$download_base_path."/".$name."/";
     }
+
+    public function deleteFromPath($path) {
+        if(substr($path,-1,1) !== "/") {
+            LoggerHelper::writeToConsole('Something went Wrong, this Path is not a folder','error');
+        }
+        array_map( 'unlink', array_filter((array) glob($path."*") ) );
+    }
     /**
      * Creates the folder structure metadata html and videos
      *
      * @return void
      */
-    public function setup_folder() {
+    public function setupFolder() {
         if(!is_dir(self::$download_base_path)) {
             mkdir(self::$download_base_path);
         }

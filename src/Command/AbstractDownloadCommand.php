@@ -2,6 +2,8 @@
 
 namespace App\Command;
 
+use App\Command\Options\SkipHandlers\ISkipHandler;
+use App\Command\Options\SkipHandlers\ISkipHandlerInProgress;
 use App\Downloaders\IBasicAuth;
 use App\Downloaders\ICookie;
 use Symfony\Component\Console\Command\Command;
@@ -21,6 +23,10 @@ use App\Helper\DownloadHelper;
 use Exception;
 use GuzzleHttp\Psr7\Response;
 use App\Helper\LoggerHelper;
+use Doctrine\Common\Collections\Expr\Value;
+use HaydenPierce\ClassFinder\ClassFinder;
+use App\Command\Options\SkipHandlers\SkipException;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 abstract class AbstractDownloadCommand extends Command
 {
@@ -40,12 +46,21 @@ abstract class AbstractDownloadCommand extends Command
     protected $basic_username;
     protected $basic_password;
     
+    private $in_progress_skipers = [];
+
     protected function configure()
     {
         $this
             ->setDescription('Downloader for '.$this->getBaseUrl())
             ->addArgument('path', InputArgument::REQUIRED, 'Path')
         ;
+        $this->addOption('skip-list',null,InputOption::VALUE_REQUIRED,'A File with a list of URLs that should be skipped');
+        $this->addOption('skip-until',null,InputOption::VALUE_REQUIRED,'Skip all videos till the passed url occures');
+        $this->addOption('skip-behind-the-scences','-b',InputOption::VALUE_NONE,'Skip all behind the scenes videos');
+        $this->addOption('ignore-download-status',null,InputOption::VALUE_NONE,'Ignore the downloaded status and redownload every video');
+        $this->addOption('del-cache',null,InputOption::VALUE_NONE,'Deletes the whole Overview.html cache before fetching');
+        $this->addOption('limit-page',null,InputArgument::REQUIRED,'Limits the overview pages to grab ex 1-3');
+
 
         $this->addAdditonalArguments();
     }
@@ -58,7 +73,7 @@ abstract class AbstractDownloadCommand extends Command
     protected function requireBasicAuth() {
         $this->basic_auth = true;
         $this->addArgument('username',InputArgument::REQUIRED,'Username for Basic Auth');
-        $this->addArgument('password',InputArgument::REQUIRED,'Passwor for Basic Auth');
+        $this->addArgument('password',InputArgument::REQUIRED,'Password for Basic Auth');        
     }
     /**
      * Add additonal Console arguments through this function 
@@ -217,20 +232,20 @@ abstract class AbstractDownloadCommand extends Command
     private function getDownloadImplementation($class) {
         if($this->cookie_auth === true) {
             if(!($class instanceof ICookie)) {
-                LoggerHelper::writeToConsole('The Class '.$class::class.' does not implement the Cookie interface','error');
+                LoggerHelper::writeToConsole('The Class  does not implement the Cookie interface','error');
             }
             $class->setCookies($this->CookieHelper);
         }
         if($this->basic_auth === true) {
             if(!($class instanceof IBasicAuth)) {
-                LoggerHelper::writeToConsole('The Class '.$class::class.' does not support BasicAuth','error');
+                LoggerHelper::writeToConsole('The Class  does not support BasicAuth','error');
             }
             $class->setBasicAuth($this->basic_username,$this->basic_password);
         } 
 
         return $class;
     }
-    protected function loadorCreatePage() {
+    protected function loadOrCreatePage() {
         $em = EntityManager::get();
         $this->page = $em->find('App\Entity\Page',$this->getPageId());
         if($this->page == null) {
@@ -243,7 +258,7 @@ abstract class AbstractDownloadCommand extends Command
         }
     } 
 
-    protected function setUpAdditonalCommands($input) {
+    protected function setUpAdditionaParameters($input) {
         if($this->basic_auth === true) {
             $this->basic_username = $input->getArgument('username');
             $this->basic_password = $input->getArgument('password');    
@@ -265,12 +280,11 @@ abstract class AbstractDownloadCommand extends Command
             if(array_key_exists($key+1,$videos)) {
                 $next_video = $videos[$key+1];
             }
-            if($video->getDownloadedVideo() === true) {
-                $progresshelper->AdvancePrimary($next_video);
-                continue;
-            }
             try {
                 $video = $parser->parseScenePage($video,$this->downloadHelper);
+                foreach ($this->in_progress_skipers as $key => $handler) {
+                    $handler->handle_in_progress($video);
+                }
                 $client = $this->downloadHelper->getClient();
                 $client->request('GET',$video->getMetadata()->getThumbnailUrl(),[
                     'sink' => DirectoryHelper::getRealPath('metadata').$video->getId().".jpg",
@@ -286,30 +300,76 @@ abstract class AbstractDownloadCommand extends Command
                 $em = EntityManager::get();
                 $em->persist($video);
                 $em->flush($video);
+            } catch(SkipException $ex) {
+                LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." was skipped because of".$ex->getMessage(),'info');
+
             } catch(Exception $ex) {
                 LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." failed ".$ex->getMessage(),'error');
             }
-       
-            $progresshelper->AdvancePrimary($next_video);
-
-            sleep(2);
+            if($next_video !== null) {
+                $progresshelper->AdvancePrimary($next_video);
+                sleep(2);
+            }
+        }
+    }
+    /**
+     * Filters videos through the command options
+     * @param Video[] $videos
+     * @param InputInterface $input
+     * @return Video[]
+     */
+    private function filterVideos($videos,$options) {
+        /** @var ISkipHandler[] */
+        $classes = ClassFinder::getClassesInNamespace('App\Command\Options\SkipHandlers');
+        $commandClasses = [];
+        $original_count = count($videos);
+        foreach ($classes as $key => $class) {
+            if($class instanceof ISkipHandler) {
+                $commandClasses[$class::getCommandName()] = $class;
+            }
+        }
+        foreach ($options as $key => $option) {
+            if($option === null) {
+                continue;
+            }
+            if(array_key_exists($key,$commandClasses)) {
+                /** @var ISkipHandler */
+                $handler = new $commandClasses[$key]($videos,$option);
+                if($handler->doesHandle()) {
+                    $videos = $handler->action();
+                }
+                if($handler instanceof ISkipHandlerInProgress) {
+                    $this->in_progress_skipers[] = $handler;
+                }
+            }
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
         /** @var \Symfony\Component\Console\Output\ConsoleOutput $output */
+        
         LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
         $path = $input->getArgument('path');
-        $this->loadorCreatePage();
-        $this->setUpAdditonalCommands($input);
+        $this->loadOrCreatePage();
+        $this->setUpAdditionaParameters($input);
+ 
         $directoryHelper = new DirectoryHelper($path);
-        $directoryHelper->setup_folder();
+        if($input->getOption('del-cache')) {
+            $questionHelper = $this->getHelper('question');
+            $question = new ConfirmationQuestion('All files in the path '.DirectoryHelper::getRealPath('cache').". Continue?",true);
+            if(!$questionHelper->ask($input,$output,$question)) {
+                return Command::FAILURE;
+            }
+            $directoryHelper->deleteFromPath(DirectoryHelper::getRealPath('cache'));
+        }
+
+        $directoryHelper->setupFolder();
 
         /** @var DownloadHelper */
         $this->downloadHelper  = $this->getDownloadImplementation(new DownloadHelper($this->getBaseUrl()));
         
         $videos = $this->getVideos();
-
+        $videos = $this->filterVideos($videos,$input->getOptions());
         $this->downloadVideos($output,$videos);
         return Command::SUCCESS;
     }

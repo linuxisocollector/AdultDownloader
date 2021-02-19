@@ -34,15 +34,6 @@ class ProgressHelper {
         $this->progressBar2->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %message%');
         // starts and displays the progress bar
         $this->progressBar1->start();
-
-        //progress to current status
-        $em = EntityManager::get()->getRepository('App\Entity\Video');
-
-        $downloaded_vids = $em->findBy([
-            'page' => $this->videos[0]->getPage()->getId(),
-            'downloaded_video' => true
-        ]);
-        $this->progressBar1->advance(count($downloaded_vids));
         $this->progressBar2->setMessage("Starting");
         $this->progressBar2->start();
 

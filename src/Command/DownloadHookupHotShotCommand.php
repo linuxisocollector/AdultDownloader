@@ -4,7 +4,6 @@ namespace App\Command;
 
 use App\Downloaders\Aria2;
 use App\Helper\ProgressHelper;
-use App\Parser\HookupHotshot;
 use App\Parser\HookupHotshotNew;
 use Exception;
 
