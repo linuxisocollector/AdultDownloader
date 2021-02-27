@@ -12,3 +12,5 @@ metadata/
 cookies/
 
 var/
+
+src/PupetterDownloader/node_modules/

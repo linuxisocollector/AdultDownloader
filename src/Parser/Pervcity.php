@@ -1,13 +1,14 @@
 <?php
 namespace App\Parser;
 
+use App\Downloaders\AbstractDownloader;
 use Symfony\Component\DomCrawler\Crawler;
 use App\Entity\Video;
 use App\Entity\MetadataObject;
 use App\Helper\VideoQualityHelper;
 use DateTime;
 
-class Pervcity extends AbstractHTMLParser{
+class Pervcity extends AbstractHTMLOverviewParser{
 
     protected function getVideoParentObject(Crawler $html) {
         $filterd = $this->getArrayFromCrawler($html->filter('.dvdsArea .videoBlock'));
@@ -29,7 +30,7 @@ class Pervcity extends AbstractHTMLParser{
         $metadata->setDate($dt);
     }
 
-    protected function parseScenePageDetail(Crawler &$crawler, Video &$video) {
+    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader) {
         $tags_crawlers = $this->getArrayFromCrawler($crawler->filter('.tagcats a'));
         $tags = [];
         foreach ($tags_crawlers as $key => $tag_crawler) {
@@ -54,6 +55,7 @@ class Pervcity extends AbstractHTMLParser{
         $metadata->setTags($tags);
         $metadata->setDescription($description);
         $video->setMetadata($metadata);
+        dump($qualities);
         $key = VideoQualityHelper::pickQuality($qualities,$video);
         $video->setDownloadUrl($qualities[$key]);
         $video->setDownloadedQualtity($key);

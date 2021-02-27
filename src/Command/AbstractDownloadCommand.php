@@ -60,7 +60,7 @@ abstract class AbstractDownloadCommand extends Command
         $this->addOption('ignore-download-status',null,InputOption::VALUE_NONE,'Ignore the downloaded status and redownload every video');
         $this->addOption('del-cache',null,InputOption::VALUE_NONE,'Deletes the whole Overview.html cache before fetching');
         $this->addOption('limit-page',null,InputArgument::REQUIRED,'Limits the overview pages to grab ex 1-3');
-
+        $this->addOption('single-url',null,InputOption::VALUE_REQUIRED,'Url of a single Scene to download');
 
         $this->addAdditonalArguments();
     }
@@ -281,7 +281,7 @@ abstract class AbstractDownloadCommand extends Command
                 $next_video = $videos[$key+1];
             }
             try {
-                $video = $parser->parseScenePage($video,$this->downloadHelper);
+                $video = $parser->parseScenePage($video,$this->downloadHelper,$downloader);
                 foreach ($this->in_progress_skipers as $key => $handler) {
                     $handler->handle_in_progress($video);
                 }
@@ -329,9 +329,11 @@ abstract class AbstractDownloadCommand extends Command
             }
         }
         foreach ($options as $key => $option) {
+
             if($option === null) {
                 continue;
             }
+
             if(array_key_exists($key,$commandClasses)) {
                 /** @var ISkipHandler */
                 $handler = new $commandClasses[$key]($videos,$option);
@@ -343,6 +345,7 @@ abstract class AbstractDownloadCommand extends Command
                 }
             }
         }
+        return $videos;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {

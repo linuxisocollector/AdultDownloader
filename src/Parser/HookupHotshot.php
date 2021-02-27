@@ -1,6 +1,7 @@
 <?php
 namespace App\Parser;
 
+use App\Downloaders\AbstractDownloader;
 use App\Entity\Video;
 use DateTime;
 use App\Entity\MetadataObject;
@@ -8,9 +9,9 @@ use Symfony\Component\DomCrawler\Crawler;
 use App\Helper\VideoQualityHelper;
 
 /** @package App\Parser */
-class HookupHotshot extends AbstractHTMLParser {
+class HookupHotshot extends AbstractHTMLOverviewParser {
 
-    protected function parseScenePageDetail(Crawler &$crawler, Video &$video) {
+    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader &$fileDownloader) {
         $sources = $this->getArrayFromCrawler($crawler->filter('video source'));
         $qualities = [];
         foreach ($sources as $key => $source_crawler) {
