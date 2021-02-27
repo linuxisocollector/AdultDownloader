@@ -16,7 +16,7 @@ class SkipDownloaded implements ISkipHandler {
     }
 
     public static function getCommandName() {
-        return 'force';
+        return 'ignore-download-status';
     }
 
     public function doesHandle() {
@@ -31,7 +31,6 @@ class SkipDownloaded implements ISkipHandler {
             }
             $out_video[] = $value;
         }
-
         return $out_video;
     }
     

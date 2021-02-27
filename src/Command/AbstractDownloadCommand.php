@@ -274,6 +274,7 @@ abstract class AbstractDownloadCommand extends Command
     protected function downloadVideos($output,$videos) {
         $progresshelper = new ProgressHelper($videos,$output);
         $parser = $this->getOverviewParser();
+        /** @var \App\Downloaders\AbstractDownloader */
         $downloader = $this->getDownloadImplementation($this->loadFileDownloader($progresshelper));
         foreach ($videos as $key => $video) {
             $next_video = null;
@@ -281,6 +282,7 @@ abstract class AbstractDownloadCommand extends Command
                 $next_video = $videos[$key+1];
             }
             try {
+                /** @var \App\Entity\Video */
                 $video = $parser->parseScenePage($video,$this->downloadHelper,$downloader);
                 foreach ($this->in_progress_skipers as $key => $handler) {
                     $handler->handle_in_progress($video);
@@ -290,8 +292,13 @@ abstract class AbstractDownloadCommand extends Command
                     'sink' => DirectoryHelper::getRealPath('metadata').$video->getId().".jpg",
                 ]);
                 LoggerHelper::writeToConsole('Fetched Scene Metadata','info');
+                $dl_url = $video->getDownloadUrl();
+                if(!(str_starts_with($dl_url,'http://') || str_starts_with($dl_url,'https://'))) {
+                    $dl_url = $this->getBaseUrl()  .$dl_url;
+                    $video->setDownloadUrl($dl_url);
+                }
                 $downloader->downloadFile(
-                    $video->getDownloadUrl(),
+                    $dl_url,
                     DirectoryHelper::getRealPath('videos'),
                     $video->getFilename()
                 );
@@ -301,7 +308,7 @@ abstract class AbstractDownloadCommand extends Command
                 $em->persist($video);
                 $em->flush($video);
             } catch(SkipException $ex) {
-                LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." was skipped because of".$ex->getMessage(),'info');
+                LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." was skipped because of ".$ex->getMessage(),'info');
 
             } catch(Exception $ex) {
                 LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." failed ".$ex->getMessage(),'error');
@@ -324,7 +331,8 @@ abstract class AbstractDownloadCommand extends Command
         $commandClasses = [];
         $original_count = count($videos);
         foreach ($classes as $key => $class) {
-            if($class instanceof ISkipHandler) {
+            $interfaces = class_implements($class);
+            if(array_key_exists('App\Command\Options\SkipHandlers\ISkipHandler',$interfaces)) {
                 $commandClasses[$class::getCommandName()] = $class;
             }
         }

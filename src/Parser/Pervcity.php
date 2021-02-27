@@ -26,7 +26,7 @@ class Pervcity extends AbstractHTMLOverviewParser{
         $date_time = $crawler->filter('.videoContent .date')->text();
         $dt = new DateTime();
         $date_time_exploded = explode('-',$date_time);
-        $dt->setDate($date_time_exploded[2],$date_time_exploded[1],$date_time_exploded[0]);
+        $dt->setDate($date_time_exploded[2],$date_time_exploded[0],$date_time_exploded[1]);
         $metadata->setDate($dt);
     }
 

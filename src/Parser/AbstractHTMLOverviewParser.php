@@ -46,29 +46,11 @@ abstract class AbstractHTMLOverviewParser extends AbstractHTMLSingleParser {
                 dump($video);
             }
             $video->setMetadata($metadata);
-            $this->isBehindeTheScences($video);
             $videos[] = $video;
         }
 
         return $videos;
     }
 
-    private function isBehindeTheScences(Video $video) {
-        $bts = false;
-        $metadata = $video->getMetadata();
-
-        if(str_contains('BTS',$metadata->getSceneName())) {
-            $bts = true;
-        }
-
-        if(str_contains('Behind the Scenes',$metadata->getSceneName())) {
-            $bts = true;
-        }
-
-        $metadata->setBehindeTheScenes($bts);
-        $video->setMetadata($metadata);
-
-        return $bts;
-    }
 
 }

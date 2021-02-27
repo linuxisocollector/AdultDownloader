@@ -41,6 +41,7 @@ abstract class AbstractHTMLSingleParser  {
         $video->setFetchedTime(new DateTime());
         $video->setGrabbedHtml(true);
         $this->parseScenePageDetail($crawler,$video,$fileDownloader);
+        $this->isBehindeTheScences($video);
         $em = EntityManager::get();
         $em->persist($video);
         $em->flush($video);
@@ -60,5 +61,22 @@ abstract class AbstractHTMLSingleParser  {
         });
 
         return $vid_array;
+    }
+
+    private function isBehindeTheScences(Video &$video) {
+        $bts = false;
+        $metadata = $video->getMetadata();
+
+        if(str_contains($metadata->getSceneName(),'BTS')) {
+            $bts = true;
+        }
+
+        if(str_contains($metadata->getSceneName(),'Behind the Scenes')) {
+            $bts = true;
+        }
+
+        $metadata->setBehindeTheScenes($bts);
+        $video->setMetadata($metadata);
+        return $bts;
     }
 }
