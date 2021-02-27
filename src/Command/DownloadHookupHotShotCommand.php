@@ -4,7 +4,7 @@ namespace App\Command;
 
 use App\Downloaders\Aria2;
 use App\Helper\ProgressHelper;
-use App\Parser\HookupHotshotNew;
+use App\Parser\HookupHotshot;
 use Exception;
 
 class DownloadHookupHotShotCommand extends AbstractDownloadCommand
@@ -17,11 +17,11 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
 
-    protected function getPageName() {
+    protected static function getPageName() {
         return 'HookupHotshot';
     }
 
-    protected function getPageId() {
+    protected static function getPageId() {
         return 1;
     }
 
@@ -44,7 +44,7 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
     protected function getOverviewParser() {
-        return new HookupHotshotNew();
+        return new HookupHotshot();
     }
 
 

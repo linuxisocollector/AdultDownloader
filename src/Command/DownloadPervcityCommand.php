@@ -15,11 +15,11 @@ class DownloadPervcityCommand extends AbstractDownloadCommand
         $this->requireCookieFile();
     }
 
-    protected function getPageName() {
+    protected static function getPageName() {
         return 'Pervcity';
     }
 
-    protected function getPageId() {
+    protected static function getPageId() {
         return 2;
     }
 

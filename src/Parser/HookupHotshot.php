@@ -12,11 +12,22 @@ use App\Helper\VideoQualityHelper;
 class HookupHotshot extends AbstractHTMLOverviewParser {
 
     protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader &$fileDownloader) {
-        $sources = $this->getArrayFromCrawler($crawler->filter('video source'));
+        $sources = $this->getArrayFromCrawler($crawler->filter('.downloaddropdown li a'));
         $qualities = [];
         foreach ($sources as $key => $source_crawler) {
-            $qualities[$source_crawler->attr('res')]=  $source_crawler->attr('src');
+            $quality_label = $source_crawler->text();
+            if(str_contains($quality_label,'1080')) {
+                $quality_label = "1080";
+            } else if(str_contains($quality_label,'720')) {
+                $quality_label = "720";
+            } else if(str_contains($quality_label,'480')) {
+                $quality_label = "480";
+            }
+            $qualities[$quality_label]= $source_crawler->attr('href');
         }
+        $meta = $video->getMetadata();
+        $meta->setActress($crawler->filter('.update_models a')->text());
+        $video->setMetadata($meta);
         $key = VideoQualityHelper::pickQuality($qualities,$video);
         $video->setDownloadUrl($qualities[$key]);
         $video->setDownloadedQualtity($key);
@@ -25,24 +36,24 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
 
 
     protected function getVideoParentObject(Crawler $crawler) {
-        $filterd = $this->getArrayFromCrawler($crawler->filter('#et-projects li'));
+        $filterd = $this->getArrayFromCrawler($crawler->filter('.bodyArea .items .item-video'));
         return $filterd;
     }
 
 
     protected function parseOverviewVideo(Crawler &$crawler, Video &$video,MetadataObject &$metadata) {
-        $video->setUrl($crawler->filter('.date-img-wrapper a')->attr('href'));
-        $metadata->setSceneName($crawler->filter('.date-title a')->text());
-        $metadata->setThumbnailUrl($crawler->filter('.date-img-wrapper a img')->attr('src'));
-        $actress = $crawler->filter('.date-starring')->text();
-        $actress = trim(str_replace('Starring ','',$actress));
-        $thumbnail_url = $metadata->getThumbnailUrl();
+        $video->setUrl($crawler->filter('.item-thumb a')->attr('href'));
+        $metadata->setSceneName($crawler->filter('.item-thumb a')->attr('title'));
+        $thumb_url = $crawler->filter('.item-thumb a img')->attr('src0_3x');
+        if( $thumb_url === null) {
+            $thumb_url = $crawler->filter('.item-thumb a img')->attr('src');
+        }
+        $metadata->setThumbnailUrl($thumb_url);
         //parse date from wordpress upload date
-        $thumb_url = str_replace('https://hookuphotshot.com/wp-content/uploads/','',$thumbnail_url);
-        $thumb_url_expoloded = explode('/',$thumb_url);
         $dt = new DateTime();
-        $dt->setDate($thumb_url_expoloded[0],$thumb_url_expoloded[1],1);
-        $metadata->setActress($actress);
+        $date = $crawler->filter('.item-info .date')->text();
+        $date_exploded = explode('-',$date);
+        $dt->setDate($date_exploded[0],$date_exploded[1],$date_exploded[2]);
         $metadata->setDate($dt);
     }
 }

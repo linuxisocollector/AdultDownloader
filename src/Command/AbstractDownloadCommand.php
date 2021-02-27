@@ -82,13 +82,13 @@ abstract class AbstractDownloadCommand extends Command
      */
     protected abstract function addAdditonalArguments();
 
-    protected abstract function getPageName();
+    protected static abstract function getPageName();
     /**
      * Used as PK for Database stuff just enter a id that is not used
      *
      * @return int
      */
-    protected abstract function getPageId();
+    protected static abstract function getPageId();
 
     /**
      * Returns the Base Url for the page you want to grab "https://example.com"
@@ -247,11 +247,11 @@ abstract class AbstractDownloadCommand extends Command
     }
     protected function loadOrCreatePage() {
         $em = EntityManager::get();
-        $this->page = $em->find('App\Entity\Page',$this->getPageId());
+        $this->page = $em->find('App\Entity\Page',self::getPageId());
         if($this->page == null) {
             $this->page = new Page();
-            $this->page->setId($this->getPageId());
-            $this->page->setName($this->getPageName());
+            $this->page->setId(self::getPageId());
+            $this->page->setName(self::getPageName());
             $this->page->setUpdated(new DateTime());
             $em->persist($this->page);
             $em->flush($this->page);
