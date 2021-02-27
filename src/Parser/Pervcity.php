@@ -55,7 +55,10 @@ class Pervcity extends AbstractHTMLOverviewParser{
         $metadata->setTags($tags);
         $metadata->setDescription($description);
         $video->setMetadata($metadata);
-        dump($qualities);
+        //@todo Quality Setting through command line argument
+        if(array_key_exists("720",$qualities) && array_key_exists("1080",$qualities)) {
+            unset($qualities["1080"]);
+        }
         $key = VideoQualityHelper::pickQuality($qualities,$video);
         $video->setDownloadUrl($qualities[$key]);
         $video->setDownloadedQualtity($key);

@@ -50,7 +50,11 @@ class Aria2 implements AbstractDownloader, ICookie, IBasicAuth {
         }
         
         if(count($this->additonalHeader) > 0) {
-            $params['header'] = $this->additonalHeader[0];
+            $header_str = "";
+            foreach ($this->additonalHeader as $key => $header) {
+                $header_str .= $header ."\n";
+            }
+            $params['header'] = $header_str;
         }
         $resp = $this->aria2->addUri(
             [$url],
