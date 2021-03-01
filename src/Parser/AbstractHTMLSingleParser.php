@@ -84,7 +84,7 @@ abstract class AbstractHTMLSingleParser  {
     private function isBehindeTheScences(Video &$video) {
         $bts = false;
         $metadata = $video->getMetadata();
-        $stringsToCheck = [$metadata->getSceneName(), ...$metadata->getTags()];
+        $stringsToCheck = array_merge([$metadata->getSceneName()],$metadata->getTags());
         $detectingStrings  = [
             'BTS',
             'Behind the Scenes'
