@@ -10,6 +10,10 @@ use DateTime;
 
 class Pervcity extends AbstractHTMLOverviewParser{
 
+    public function getPublicUrl(Video $video) {
+        return '';
+    }
+
     protected function getVideoParentObject(Crawler $html) {
         $filterd = $this->getArrayFromCrawler($html->filter('.dvdsArea .videoBlock'));
         
@@ -30,7 +34,7 @@ class Pervcity extends AbstractHTMLOverviewParser{
         $metadata->setDate($dt);
     }
 
-    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader) {
+    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker) {
         $tags_crawlers = $this->getArrayFromCrawler($crawler->filter('.tagcats a'));
         $tags = [];
         foreach ($tags_crawlers as $key => $tag_crawler) {
@@ -49,19 +53,16 @@ class Pervcity extends AbstractHTMLOverviewParser{
             } else if($text == 'SD') {
                 $text = '480';
             }
-            $qualities[$text]=  $download_crawler->filter('.btndownload')->attr('href');
+            $link = $download_crawler->filter('.btndownload')->attr('href');
+            if(!isset($link)) {
+                continue;
+            }
+            $qualityPicker->addLink($text,$link);
         }
         $metadata = $video->getMetadata();
         $metadata->setTags($tags);
         $metadata->setDescription($description);
         $video->setMetadata($metadata);
-        //@todo Quality Setting through command line argument
-        if(array_key_exists("720",$qualities) && array_key_exists("1080",$qualities)) {
-            unset($qualities["1080"]);
-        }
-        $key = VideoQualityHelper::pickQuality($qualities,$video);
-        $video->setDownloadUrl($qualities[$key]);
-        $video->setDownloadedQualtity($key);
     }
 
 }

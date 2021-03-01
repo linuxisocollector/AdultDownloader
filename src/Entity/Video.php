@@ -181,7 +181,7 @@ class Video
      */
     public function setMetadata($metadata) : self
     {
-        $this->metadata = $metadata;
+        $this->metadata = clone $metadata;
 
         return $this;
     }

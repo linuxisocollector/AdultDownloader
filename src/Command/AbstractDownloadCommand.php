@@ -26,7 +26,9 @@ use App\Helper\LoggerHelper;
 use Doctrine\Common\Collections\Expr\Value;
 use HaydenPierce\ClassFinder\ClassFinder;
 use App\Command\Options\SkipHandlers\SkipException;
+use App\Helper\VideoQualityHelper;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Throwable;
 
 abstract class AbstractDownloadCommand extends Command
 {
@@ -61,6 +63,9 @@ abstract class AbstractDownloadCommand extends Command
         $this->addOption('del-cache',null,InputOption::VALUE_NONE,'Deletes the whole Overview.html cache before fetching');
         $this->addOption('limit-page',null,InputArgument::REQUIRED,'Limits the overview pages to grab ex 1-3');
         $this->addOption('single-url',null,InputOption::VALUE_REQUIRED,'Url of a single Scene to download');
+        $this->addOption('max-bts-quality',null,InputOption::VALUE_REQUIRED,'A Numerice maximal Height of a BTS Scene to Download (Default: 720)');
+        $this->addOption('max-scene-quality',null,InputOption::VALUE_REQUIRED,'A Numerice maximal Height for a Scene to Download (Default: 1080)');
+
 
         $this->addAdditonalArguments();
     }
@@ -82,20 +87,20 @@ abstract class AbstractDownloadCommand extends Command
      */
     protected abstract function addAdditonalArguments();
 
-    protected static abstract function getPageName();
+    public static abstract function getPageName();
     /**
      * Used as PK for Database stuff just enter a id that is not used
      *
      * @return int
      */
-    protected static abstract function getPageId();
+    public abstract function getPageId();
 
     /**
      * Returns the Base Url for the page you want to grab "https://example.com"
      *
      * @return string
      */
-    protected abstract function getBaseUrl();
+    public abstract function getBaseUrl();
 
     /**
      * Which is the first page does the scene page start with 0 or 1?
@@ -138,7 +143,7 @@ abstract class AbstractDownloadCommand extends Command
      *
      * @return AbstractHTMLParser
      */
-    protected abstract function getOverviewParser();
+    public abstract function getOverviewParser();
 
 
     /**
@@ -229,7 +234,7 @@ abstract class AbstractDownloadCommand extends Command
         return $videos_saved;
     }
 
-    private function getDownloadImplementation($class) {
+    public function getDownloadImplementation($class) {
         if($this->cookie_auth === true) {
             if(!($class instanceof ICookie)) {
                 LoggerHelper::writeToConsole('The Class  does not implement the Cookie interface','error');
@@ -245,13 +250,13 @@ abstract class AbstractDownloadCommand extends Command
 
         return $class;
     }
-    protected function loadOrCreatePage() {
+    public function loadOrCreatePage() {
         $em = EntityManager::get();
-        $this->page = $em->find('App\Entity\Page',self::getPageId());
+        $this->page = $em->find('App\Entity\Page',$this->getPageId());
         if($this->page == null) {
             $this->page = new Page();
-            $this->page->setId(self::getPageId());
-            $this->page->setName(self::getPageName());
+            $this->page->setId($this->getPageId());
+            $this->page->setName(static::getPageName());
             $this->page->setUpdated(new DateTime());
             $em->persist($this->page);
             $em->flush($this->page);
@@ -268,6 +273,7 @@ abstract class AbstractDownloadCommand extends Command
             $cookie_file_path = $input->getArgument('cookie');
             $this->CookieHelper = new CookieHelper($cookie_file_path,$this->getBaseUrl());
         }
+        
         
     }
 
@@ -365,6 +371,18 @@ abstract class AbstractDownloadCommand extends Command
         $this->setUpAdditionaParameters($input);
  
         $directoryHelper = new DirectoryHelper($path);
+        try {
+            if($input->getOption('max-bts-quality')) {
+                VideoQualityHelper::setBehindeTheScenesQuality($input->getOption('max-bts-quality'));
+            }
+            if($input->getOption('max-scene-quality')) {
+                VideoQualityHelper::setBehindeTheScenesQuality($input->getOption('max-bts-quality'));
+            }
+        } catch(Throwable $ex) {
+            LoggerHelper::writeToConsole($ex->getMessage(),'error');
+            return Command::INVALID;
+        }
+        
         if($input->getOption('del-cache')) {
             $questionHelper = $this->getHelper('question');
             $question = new ConfirmationQuestion('All files in the path '.DirectoryHelper::getRealPath('cache').". Continue?",true);
@@ -384,6 +402,15 @@ abstract class AbstractDownloadCommand extends Command
         $this->downloadVideos($output,$videos);
         return Command::SUCCESS;
     }
+
+    /**
+     * Get the value of page
+     */
+    public function getPage()
+    {
+        return $this->page;
+    }
+
 }
 
 

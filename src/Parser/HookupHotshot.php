@@ -1,17 +1,24 @@
 <?php
 namespace App\Parser;
 
+
 use App\Downloaders\AbstractDownloader;
-use App\Entity\Video;
-use DateTime;
-use App\Entity\MetadataObject;
 use Symfony\Component\DomCrawler\Crawler;
+use App\Entity\Video;
+use App\Entity\MetadataObject;
 use App\Helper\VideoQualityHelper;
+use DateTime;
 
 /** @package App\Parser */
 class HookupHotshot extends AbstractHTMLOverviewParser {
 
-    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader &$fileDownloader) {
+    public function getPublicUrl(Video $video) {
+        $str = str_replace('/members/scenes/','/trailers/',$video->getUrl());
+        $str = str_replace('_vids','',$str);
+        return $str;
+    }
+
+    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker) {
         $sources = $this->getArrayFromCrawler($crawler->filter('.downloaddropdown li a'));
         $qualities = [];
         foreach ($sources as $key => $source_crawler) {
@@ -23,15 +30,11 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
             } else if(str_contains($quality_label,'480')) {
                 $quality_label = "480";
             }
-            $qualities[$quality_label]= $source_crawler->attr('href');
+            $qualityPicker->addLink($quality_label,$source_crawler->attr('href'));
         }
         $meta = $video->getMetadata();
         $meta->setActress($crawler->filter('.update_models a')->text());
         $video->setMetadata($meta);
-        $key = VideoQualityHelper::pickQuality($qualities,$video);
-        $video->setDownloadUrl($qualities[$key]);
-        $video->setDownloadedQualtity($key);
-
     }
 
 

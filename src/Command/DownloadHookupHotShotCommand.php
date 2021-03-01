@@ -17,15 +17,15 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
 
-    protected static function getPageName() {
+    public static function getPageName() {
         return 'HookupHotshot';
     }
 
-    protected static function getPageId() {
+    public function getPageId() {
         return 1;
     }
 
-    protected function getBaseUrl() {
+    public function getBaseUrl() {
         return 'https://hookuphotshot.com/';
     }
 
@@ -43,7 +43,7 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
         }
     }
 
-    protected function getOverviewParser() {
+    public function getOverviewParser() {
         return new HookupHotshot();
     }
 

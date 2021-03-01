@@ -7,7 +7,7 @@ class MetadataObject {
     private $actress;
 
     /** @var string[] */
-    private $tags;
+    private $tags =[];
 
 
     private $scene_name;
@@ -31,7 +31,11 @@ class MetadataObject {
      */
     public function getTags() : array 
     {
-        return $this->tags;
+        if(is_array($this->tags)) {
+            return $this->tags;
+        } else {
+            return [];
+        }
     }
 
     /**

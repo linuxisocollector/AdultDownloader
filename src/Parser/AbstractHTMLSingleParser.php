@@ -6,25 +6,35 @@ use App\Entity\Video;
 use App\Helper\DownloadHelper;
 use App\Helper\EntityManager;
 use App\Entity\MetadataObject;
+use App\Helper\VideoQualityHelper;
 use DateTime;
 use Exception;
 use Symfony\Component\DomCrawler\Crawler;
 
 abstract class AbstractHTMLSingleParser  {
-    public function __construct() {
-
+    private $save;
+    private $download;
+    private $public;
+    public function __construct($save = true, $download = true,$public = false) {
+        $this->save = $save;
+        $this->download = $download;
+        $this->public = $public;
     }
 
-
+    
     /**
      * Parse Scene Date from the Detail view
      *
      * @param Crawler $crawler
      * @param Video $video
-     * @return void
+     * @param AbstractDownloader $fileDownloader
+     * @param VideoQualityHelper $qualityPicker
+     * @return Video
      */
-    protected abstract function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader);
+    protected abstract function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker);
 
+
+    public abstract function getPublicUrl(Video $video);
     /**
      * Adds missing date from detail page to main page also saves the metadata to folder for easy consumption
      *
@@ -34,17 +44,25 @@ abstract class AbstractHTMLSingleParser  {
     public function parseScenePage(Video &$video, DownloadHelper &$downloadHelper,AbstractDownloader $fileDownloader) {
         //always invalidate scene cache.
         $client = $downloadHelper->getClient();
-        $resp = $client->request('GET',$video->getUrl(),[]
-        );
+        $url = $this->public ? $this->getPublicUrl($video) : $video->getUrl();
 
+        $resp = $client->request('GET',$url,[]
+        );
+        $qualityPicker = new VideoQualityHelper();
         $crawler = new Crawler((string)$resp->getBody());
-        $video->setFetchedTime(new DateTime());
         $video->setGrabbedHtml(true);
-        $this->parseScenePageDetail($crawler,$video,$fileDownloader);
+        $this->parseScenePageDetail($crawler,$video,$fileDownloader,$qualityPicker);
         $this->isBehindeTheScences($video);
-        $em = EntityManager::get();
-        $em->persist($video);
-        $em->flush($video);
+        if($this->download) {
+            $video->setFetchedTime(new DateTime());
+            $video = $qualityPicker->pickQuality($video);
+        }
+        if($this->save) {
+            $em = EntityManager::get();
+            $em->persist($video);
+            $em->flush($video);
+        }
+
         return $video;
     }
 
@@ -66,17 +84,59 @@ abstract class AbstractHTMLSingleParser  {
     private function isBehindeTheScences(Video &$video) {
         $bts = false;
         $metadata = $video->getMetadata();
-
-        if(str_contains($metadata->getSceneName(),'BTS')) {
-            $bts = true;
+        $stringsToCheck = [$metadata->getSceneName(), ...$metadata->getTags()];
+        $detectingStrings  = [
+            'BTS',
+            'Behind the Scenes'
+        ];
+        foreach ($stringsToCheck as $key => $checkString) {
+            foreach ($detectingStrings as $key => $detectionString) {
+                if(str_contains($checkString,$detectionString)) {
+                    $bts = true;
+                    break 2;
+                }
+            }
+   
+    
         }
-
-        if(str_contains($metadata->getSceneName(),'Behind the Scenes')) {
-            $bts = true;
-        }
-
         $metadata->setBehindeTheScenes($bts);
         $video->setMetadata($metadata);
         return $bts;
+    }
+
+    /**
+     * Set the value of save
+     *
+     * @return self
+     */
+    public function setSave($save) : self
+    {
+        $this->save = $save;
+
+        return $this;
+    }
+
+    /**
+     * Set the value of download
+     *
+     * @return self
+     */
+    public function setDownload($download) : self
+    {
+        $this->download = $download;
+
+        return $this;
+    }
+
+    /**
+     * Set the value of public
+     *
+     * @return self
+     */
+    public function setPublic($public) : self
+    {
+        $this->public = $public;
+
+        return $this;
     }
 }
