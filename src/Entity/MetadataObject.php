@@ -14,7 +14,7 @@ class MetadataObject {
 
     private $date;
 
-    private $BehindeTheScenes;
+    private $BehindeTheScenes = false;
     private $thumbnail_url;
 
     private $description;
@@ -155,7 +155,10 @@ class MetadataObject {
      */
     public function getBehindeTheScenes() : bool 
     {
-        return $this->BehindeTheScenes;
+        if(isset($this->BehindeTheScenes) {
+            return $this->BehindeTheScenes;
+        }
+        return false;
     }
 
     /**
