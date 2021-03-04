@@ -45,16 +45,14 @@ abstract class AbstractHTMLSingleParser  {
         //always invalidate scene cache.
         $client = $downloadHelper->getClient();
         $url = $this->public ? $this->getPublicUrl($video) : $video->getUrl();
-
-        $resp = $client->request('GET',$url,[]
-        );
+        $resp = $client->request('GET',$url,[]);
         $qualityPicker = new VideoQualityHelper();
         $crawler = new Crawler((string)$resp->getBody());
         $video->setGrabbedHtml(true);
+        $video->setFetchedTime(new DateTime());
         $this->parseScenePageDetail($crawler,$video,$fileDownloader,$qualityPicker);
         $this->isBehindeTheScences($video);
         if($this->download) {
-            $video->setFetchedTime(new DateTime());
             $video = $qualityPicker->pickQuality($video);
         }
         if($this->save) {

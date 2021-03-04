@@ -34,6 +34,19 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
         }
         $meta = $video->getMetadata();
         $meta->setActress($crawler->filter('.update_models a')->text());
+        $tagsNodes = $this->getArrayFromCrawler($crawler->filter('.featuring ul li'));
+        $tags = [];
+        foreach ($tagsNodes as $key => $value) {
+            $text = $value->text();
+            if(in_array($text,[
+                'Featuring:',
+                $meta->getActress(),
+                'Tags:'
+            ])) {
+                continue;
+            }
+        }
+        $meta->setTags($tags);
         $video->setMetadata($meta);
     }
 

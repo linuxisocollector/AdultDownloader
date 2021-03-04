@@ -43,8 +43,8 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
         }
     }
 
-    public function getOverviewParser() {
-        return new HookupHotshot();
+    public function getMetadataParser() {
+        return new HookupHotshot($this->saveEntities,$this->downloadVideosSetup,$this->publicMetadata);
     }
 
 

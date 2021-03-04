@@ -11,7 +11,9 @@ use DateTime;
 class Pervcity extends AbstractHTMLOverviewParser{
 
     public function getPublicUrl(Video $video) {
-        return '';
+        $str = str_replace('https://members.pervcity.com/scenes/','https://pervcity.com/trailers/',$video->getUrl());
+        $str = str_replace('_vids','',$str);
+        return $str;
     }
 
     protected function getVideoParentObject(Crawler $html) {

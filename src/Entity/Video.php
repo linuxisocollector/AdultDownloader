@@ -40,6 +40,8 @@ class Video
     /** @Column(type="object",nullable=true) */
     private $metadata;
 
+    /** @Column(length=1024,nullable=true) */
+    private $fileNameSaved = "";
 
     private $download_url = "";
     /**
@@ -244,5 +246,25 @@ class Video
 
     public function getFilePath() : string {
         return DirectoryHelper::getRealPath('videos').$this->getFilename();
+    }
+
+    /**
+     * Get the value of fileNameSaved
+     */
+    public function getFileNameSaved() : string
+    {
+        return $this->fileNameSaved;
+    }
+
+    /**
+     * Set the value of fileNameSaved
+     *
+     * @return self
+     */
+    public function setFileNameSaved($fileNameSaved) : self
+    {
+        $this->fileNameSaved = $fileNameSaved;
+
+        return $this;
     }
 }

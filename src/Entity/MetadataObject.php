@@ -155,7 +155,7 @@ class MetadataObject {
      */
     public function getBehindeTheScenes() : bool 
     {
-        if(isset($this->BehindeTheScenes) {
+        if(isset($this->BehindeTheScenes)) {
             return $this->BehindeTheScenes;
         }
         return false;

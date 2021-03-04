@@ -48,6 +48,9 @@ abstract class AbstractDownloadCommand extends Command
     protected $basic_username;
     protected $basic_password;
     
+    protected $downloadVideosSetup;
+    protected $saveEntities;
+    protected $publicMetadata;
     private $in_progress_skipers = [];
 
     protected function configure()
@@ -65,8 +68,9 @@ abstract class AbstractDownloadCommand extends Command
         $this->addOption('single-url',null,InputOption::VALUE_REQUIRED,'Url of a single Scene to download');
         $this->addOption('max-bts-quality',null,InputOption::VALUE_REQUIRED,'A Numerice maximal Height of a BTS Scene to Download (Default: 720)');
         $this->addOption('max-scene-quality',null,InputOption::VALUE_REQUIRED,'A Numerice maximal Height for a Scene to Download (Default: 1080)');
-
-
+        $this->addOption('no-download','-d',InputOption::VALUE_NONE,'Dry Run without Downloading any files (Metadata Only)');
+        $this->addOption('no-save',null,InputOption::VALUE_NONE,"Don't save fetched Metadata to Database");
+        $this->addOption('public','-p',InputOption::VALUE_NONE,'Use Public Url to get Metadata when "no-download" is active');
         $this->addAdditonalArguments();
     }
 
@@ -143,7 +147,7 @@ abstract class AbstractDownloadCommand extends Command
      *
      * @return AbstractHTMLParser
      */
-    public abstract function getOverviewParser();
+    public abstract function getMetadataParser();
 
 
     /**
@@ -191,6 +195,7 @@ abstract class AbstractDownloadCommand extends Command
                     
                     //echo "Downloaded Overview Page: $page_num\n";
                 } catch(Exception $ex) {
+                    
                     LoggerHelper::writeToConsole("Possibly reached last page Pages: $page_num",'info');
                     break;
                 }
@@ -200,11 +205,13 @@ abstract class AbstractDownloadCommand extends Command
             $bodies[$url] = $body;
         }
         LoggerHelper::writeToConsole("Finished Downloading Overview Pages, Parsing Metadata now",'info');
-        $metadata_parser = $this->getOverviewParser();
+        $metadata_parser = $this->getMetadataParser();
         $videos = [];
         foreach ($bodies as $key => $html) {
             $videos  = array_merge($videos, $metadata_parser->ParsePage($html,$key));
         }
+        /** @var Video[] $videos */
+
         $em = EntityManager::get();
         $video_repository = $em->getRepository('App\Entity\Video');
         /** @var Video[] */
@@ -217,6 +224,7 @@ abstract class AbstractDownloadCommand extends Command
             $videoUrl = $video->getUrl();
             foreach ($existing_vids as $key => $existing_vid) {
                 if($existing_vid->getUrl() == $videoUrl) {
+                    $existing_vid->setMetadata($video->getMetadata());
                     continue 2;
                 }
             }
@@ -279,7 +287,7 @@ abstract class AbstractDownloadCommand extends Command
 
     protected function downloadVideos($output,$videos) {
         $progresshelper = new ProgressHelper($videos,$output);
-        $parser = $this->getOverviewParser();
+        $parser = $this->getMetadataParser();
         /** @var \App\Downloaders\AbstractDownloader */
         $downloader = $this->getDownloadImplementation($this->loadFileDownloader($progresshelper));
         foreach ($videos as $key => $video) {
@@ -291,7 +299,9 @@ abstract class AbstractDownloadCommand extends Command
                 /** @var \App\Entity\Video */
                 $video = $parser->parseScenePage($video,$this->downloadHelper,$downloader);
                 foreach ($this->in_progress_skipers as $key => $handler) {
-                    $handler->handle_in_progress($video);
+                    if($handler->doesHandle()) {
+                        $handler->handle_in_progress($video);
+                    }
                 }
                 $client = $this->downloadHelper->getClient();
                 $client->request('GET',$video->getMetadata()->getThumbnailUrl(),[
@@ -299,20 +309,26 @@ abstract class AbstractDownloadCommand extends Command
                 ]);
                 LoggerHelper::writeToConsole('Fetched Scene Metadata','info');
                 $dl_url = $video->getDownloadUrl();
-                if(!(str_starts_with($dl_url,'http://') || str_starts_with($dl_url,'https://'))) {
-                    $dl_url = $this->getBaseUrl()  .$dl_url;
-                    $video->setDownloadUrl($dl_url);
+                if($this->downloadVideosSetup) {
+                    if(!(str_starts_with($dl_url,'http://') || str_starts_with($dl_url,'https://'))) {
+                        $dl_url = $this->getBaseUrl()  .$dl_url;
+                        $video->setDownloadUrl($dl_url);
+                    }
+                    $downloader->downloadFile(
+                        $dl_url,
+                        DirectoryHelper::getRealPath('videos'),
+                        $video->getFilename()
+                    );
+                    LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." Finished",'info');
+                    $video->setFileNameSaved($video->getFilename());
+                    $video->setDownloadedVideo(true);  
                 }
-                $downloader->downloadFile(
-                    $dl_url,
-                    DirectoryHelper::getRealPath('videos'),
-                    $video->getFilename()
-                );
-                LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." Finished",'info');
-                $video->setDownloadedVideo(true);
-                $em = EntityManager::get();
-                $em->persist($video);
-                $em->flush($video);
+                if($this->saveEntities) {
+                    $em = EntityManager::get();
+                    $em->persist($video);
+                    $em->flush($video);
+                }
+
             } catch(SkipException $ex) {
                 LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." was skipped because of ".$ex->getMessage(),'info');
 
@@ -322,6 +338,9 @@ abstract class AbstractDownloadCommand extends Command
             if($next_video !== null) {
                 $progresshelper->AdvancePrimary($next_video);
                 sleep(2);
+            } else {
+                LoggerHelper::writeToConsole('Fetched all Scenes','info');
+                $progresshelper->AdvancePrimary($video);
             }
         }
     }
@@ -368,8 +387,18 @@ abstract class AbstractDownloadCommand extends Command
         LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
         $path = $input->getArgument('path');
         $this->loadOrCreatePage();
+        $this->saveEntities = !$input->getOption('no-save');
+        $this->downloadVideosSetup = !$input->getOption('no-download');
+        if($input->getOption('public')) {
+            if($this->downloadVideosSetup) {
+                LoggerHelper::writeToConsole("You can't fetch Public metadata and download try the option --no-download",'error');
+                return Command::INVALID;
+            }
+            $this->cookie_auth = false;
+            $this->basic_auth = false;
+            $this->publicMetadata = true;
+        }
         $this->setUpAdditionaParameters($input);
- 
         $directoryHelper = new DirectoryHelper($path);
         try {
             if($input->getOption('max-bts-quality')) {
@@ -382,7 +411,7 @@ abstract class AbstractDownloadCommand extends Command
             LoggerHelper::writeToConsole($ex->getMessage(),'error');
             return Command::INVALID;
         }
-        
+
         if($input->getOption('del-cache')) {
             $questionHelper = $this->getHelper('question');
             $question = new ConfirmationQuestion('All files in the path '.DirectoryHelper::getRealPath('cache').". Continue?",true);

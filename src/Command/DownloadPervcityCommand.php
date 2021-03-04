@@ -41,8 +41,8 @@ class DownloadPervcityCommand extends AbstractDownloadCommand
         }
     }
 
-    public function getOverviewParser() {
-        return new Pervcity();
+    public function getMetadataParser() {
+        return new Pervcity($this->saveEntities,$this->downloadVideosSetup,$this->publicMetadata);
     }
 
 

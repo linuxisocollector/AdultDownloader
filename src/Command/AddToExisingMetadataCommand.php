@@ -81,7 +81,7 @@ class AddToExisingMetadataCommand extends Command {
         $metadata = $video->getMetadata();
         $downloadHelper  = $download_class->getDownloadImplementation(new DownloadHelper($download_class->getBaseUrl()));
         $fileDownloader  = new Aria2(new ProgressHelper([$video],$output));
-        $parser = $download_class->getOverviewParser();
+        $parser = $download_class->getMetadataParser();
         $parser->setSave(false);
         $parser->setDownload(false);
         $parser->setPublic(true);
@@ -94,7 +94,6 @@ class AddToExisingMetadataCommand extends Command {
             return Command::FAILURE;
         }
         //move video
-        dump($video->getFilePath());
         $video->setDownloadedQualtity(1080);
         $video->setDownloadedVideo(true);
         $em = EntityManager::get();
