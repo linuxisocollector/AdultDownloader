@@ -20,7 +20,6 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
 
     protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker) {
         $sources = $this->getArrayFromCrawler($crawler->filter('.downloaddropdown li a'));
-        $qualities = [];
         foreach ($sources as $key => $source_crawler) {
             $quality_label = $source_crawler->text();
             if(str_contains($quality_label,'1080')) {

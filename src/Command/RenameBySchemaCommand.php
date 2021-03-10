@@ -97,7 +97,6 @@ class RenameBySchemaCommand extends Command {
                 LoggerHelper::writeToConsole('Error while renaming '.$video->getFilename(),'error');
             }
 
-            //
 
         }
 

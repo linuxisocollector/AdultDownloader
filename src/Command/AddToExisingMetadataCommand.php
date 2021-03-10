@@ -70,6 +70,9 @@ class AddToExisingMetadataCommand extends Command {
             LoggerHelper::writeToConsole("The file $VideoPath does not exist",'error');
             return Command::INVALID;
         }
+        $extension = explode('.',$VideoPath);
+        $extension = end($extension);
+      
         $em = EntityManager::get();
         new DirectoryHelper($input->getArgument('ExistingDownloadPath'));
         $video_repository = $em->getRepository('App\Entity\Video');
@@ -78,6 +81,10 @@ class AddToExisingMetadataCommand extends Command {
             ]);
         /** @var Video */
         $video = reset($videos);
+        if($video == false) {
+            LoggerHelper::writeToConsole('Invalid url','error');
+            return Command::FAILURE;
+        }
         $metadata = $video->getMetadata();
         $downloadHelper  = $download_class->getDownloadImplementation(new DownloadHelper($download_class->getBaseUrl()));
         $fileDownloader  = new Aria2(new ProgressHelper([$video],$output));
@@ -96,6 +103,9 @@ class AddToExisingMetadataCommand extends Command {
         //move video
         $video->setDownloadedQualtity(1080);
         $video->setDownloadedVideo(true);
+        $video->setDownloadUrl('.'.$extension);
+        $filename = $video->getFilename();
+        $video->setFileNameSaved($filename);
         $em = EntityManager::get();
         $em->persist($video);
         $em->flush($video);

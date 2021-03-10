@@ -14,6 +14,20 @@ class DirectoryHelper {
     {
         self::$download_base_path = realpath($path);
     }
+    /**
+     * Returns html from cache
+     *
+     * @param [type] $url
+     * @return void
+     */
+    public static function getCached($url) {
+        $filepath  = DirectoryHelper::getRealPath('cache').md5($url);
+        if(is_file($filepath)) {
+            return file_get_contents($filepath);
+        }
+        return false;
+    }
+
 
 
     public static function getRealPath($name) {

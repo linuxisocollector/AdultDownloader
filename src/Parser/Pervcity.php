@@ -22,6 +22,7 @@ class Pervcity extends AbstractHTMLOverviewParser{
         return $filterd;
     }
 
+
     protected function parseOverviewVideo(Crawler &$crawler, Video &$video, MetadataObject &$metadata) {
         $video->setUrl($crawler->filter('.videoPic a')->attr('href'));
         $metadata->setSceneName($crawler->filter('.videoContent h3 a')->text());
@@ -45,16 +46,8 @@ class Pervcity extends AbstractHTMLOverviewParser{
         $description = $crawler->filter('.infoBox > p')->text();
 
         $downloads_crawlers = $this->getArrayFromCrawler($crawler->filter('#downloads .contentdownload .listpanel'));
-        $qualities = [];
         foreach ($downloads_crawlers as $key => $download_crawler) {
             $text = $download_crawler->filter('h4')->text();
-            if($text == '720p') {
-                $text = '720';
-            } else if($text == 'Full HD') {
-                $text = '1080';
-            } else if($text == 'SD') {
-                $text = '480';
-            }
             $link = $download_crawler->filter('.btndownload')->attr('href');
             if(!isset($link)) {
                 continue;

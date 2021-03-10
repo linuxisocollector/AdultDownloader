@@ -6,6 +6,7 @@ use App\Entity\Video;
 use App\Helper\DownloadHelper;
 use App\Helper\EntityManager;
 use App\Entity\MetadataObject;
+use App\Helper\DirectoryHelper;
 use App\Helper\VideoQualityHelper;
 use DateTime;
 use Exception;
@@ -46,8 +47,11 @@ abstract class AbstractHTMLSingleParser  {
         $client = $downloadHelper->getClient();
         $url = $this->public ? $this->getPublicUrl($video) : $video->getUrl();
         $resp = $client->request('GET',$url,[]);
+        $body = (string)$resp->getBody();
+        //save to cache
+        file_put_contents(DirectoryHelper::getRealPath('cache').md5($url),$body);
         $qualityPicker = new VideoQualityHelper();
-        $crawler = new Crawler((string)$resp->getBody());
+        $crawler = new Crawler($body);
         $video->setGrabbedHtml(true);
         $video->setFetchedTime(new DateTime());
         $this->parseScenePageDetail($crawler,$video,$fileDownloader,$qualityPicker);
