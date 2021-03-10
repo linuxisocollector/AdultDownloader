@@ -9,7 +9,12 @@ use Exception;
 
 class DownloadPervcityCommand extends AbstractDownloadCommand
 {
+    private $baseUrl = "https://members.pervcity.com/";
     protected static $defaultName = 'download:pervcity';
+
+    public function setPublicMetadata(bool $status) {
+        $this->baseUrl = "https://pervcity.com/";
+    }
 
     protected function addAdditonalArguments() {
         $this->requireCookieFile();
@@ -24,7 +29,7 @@ class DownloadPervcityCommand extends AbstractDownloadCommand
     }
 
     public function getBaseUrl() {
-        return 'https://members.pervcity.com/';
+        return $this->baseUrl;
     }
 
     protected function getFirstPage() { 

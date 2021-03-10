@@ -13,9 +13,9 @@ use Exception;
 use Symfony\Component\DomCrawler\Crawler;
 
 abstract class AbstractHTMLSingleParser  {
-    private $save;
-    private $download;
-    private $public;
+    protected $save;
+    protected $download;
+    protected $public;
     public function __construct($save = true, $download = true,$public = false) {
         $this->save = $save;
         $this->download = $download;

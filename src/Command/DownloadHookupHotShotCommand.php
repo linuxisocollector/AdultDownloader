@@ -7,9 +7,15 @@ use App\Helper\ProgressHelper;
 use App\Parser\HookupHotshot;
 use Exception;
 
+/** @package App\Command */
 class DownloadHookupHotShotCommand extends AbstractDownloadCommand
 {
+    private $videoPath = 'members/categories/movies/{num}/latest/';
     protected static $defaultName = 'download:hookuphotshot';
+
+    public function setPublicMetadata(bool $status) {
+        $this->videoPath = 'categories/movies/{num}/latest/';
+    }
 
     protected function addAdditonalArguments() {
         $this->requireBasicAuth();
@@ -34,7 +40,7 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
     protected function getVideoPath() {
-        return 'members/categories/movies/{num}/latest/';
+        return $this->videoPath;
     }
 
     protected function lastPageReached($response) {

@@ -52,6 +52,7 @@ abstract class AbstractDownloadCommand extends Command
     protected $saveEntities;
     protected $publicMetadata;
     private $in_progress_skipers = [];
+    protected $options;
 
     protected function configure()
     {
@@ -150,24 +151,11 @@ abstract class AbstractDownloadCommand extends Command
     public abstract function getMetadataParser();
 
 
+    public abstract function setPublicMetadata(bool $status);
     /**
      * REST SHOULD NOT BE CHANGED WHEN IMPLEMENTING A NEW PAGE
      */
     
-    /**
-     * Returns html from cache
-     *
-     * @param [type] $url
-     * @return void
-     */
-    protected function getCached($url) {
-        $filepath  = DirectoryHelper::getRealPath('cache').md5($url);
-        if(is_file($filepath)) {
-            return file_get_contents($filepath);
-        }
-        return false;
-    }
-
 
 
     /**
@@ -179,23 +167,22 @@ abstract class AbstractDownloadCommand extends Command
         LoggerHelper::writeToConsole("Starting to fetch overview Pages",'info');
         $client = $this->downloadHelper->getClient();
         $page_num = $this->getFirstPage();
-        $video_num = 0;
         $bodies = [];
         while(true) {
             $url = str_replace('{num}',$page_num,$this->getVideoPath());
-            $body = $this->getCached($url);
+            $body = DirectoryHelper::getCached($url);
             if($body === false) {
                 try {
                     $res = $client->request('GET',$url,[]);
-                    $this->lastPageReached($res);
                     $body = $res->getBody();
                     //save to cache
                     file_put_contents(DirectoryHelper::getRealPath('cache').md5($url),$body);
+                    $this->lastPageReached($res);
+
                     LoggerHelper::writeToConsole("Downloaded Overview Page: $page_num",'info');
                     
                     //echo "Downloaded Overview Page: $page_num\n";
                 } catch(Exception $ex) {
-                    
                     LoggerHelper::writeToConsole("Possibly reached last page Pages: $page_num",'info');
                     break;
                 }
@@ -211,6 +198,8 @@ abstract class AbstractDownloadCommand extends Command
             $videos  = array_merge($videos, $metadata_parser->ParsePage($html,$key));
         }
         /** @var Video[] $videos */
+        //Filter Videos so that not completly refetched Metatdata doesn't get overwritten
+        $videos = $this->filterVideos($videos,$this->options);
 
         $em = EntityManager::get();
         $video_repository = $em->getRepository('App\Entity\Video');
@@ -224,7 +213,10 @@ abstract class AbstractDownloadCommand extends Command
             $videoUrl = $video->getUrl();
             foreach ($existing_vids as $key => $existing_vid) {
                 if($existing_vid->getUrl() == $videoUrl) {
-                    $existing_vid->setMetadata($video->getMetadata());
+                    //to prevent overwritte from detail
+                    $existing_vid->setMetadata($existing_vid->getMetadata()->combineMetadata($video->getMetadata()));
+                    $em->persist($existing_vid);
+                    $em->flush($existing_vid);
                     continue 2;
                 }
             }
@@ -330,6 +322,11 @@ abstract class AbstractDownloadCommand extends Command
                 }
 
             } catch(SkipException $ex) {
+                if($this->saveEntities) {
+                    $em = EntityManager::get();
+                    $em->persist($video);
+                    $em->flush($video);
+                }
                 LoggerHelper::writeToConsole('Download of Scene '.$video->getFilename()." was skipped because of ".$ex->getMessage(),'info');
 
             } catch(Exception $ex) {
@@ -386,6 +383,7 @@ abstract class AbstractDownloadCommand extends Command
         
         LoggerHelper::setIO(new SymfonyStyle($input, $output->section()));
         $path = $input->getArgument('path');
+        $this->options = $input->getOptions();
         $this->loadOrCreatePage();
         $this->saveEntities = !$input->getOption('no-save');
         $this->downloadVideosSetup = !$input->getOption('no-download');
@@ -397,6 +395,7 @@ abstract class AbstractDownloadCommand extends Command
             $this->cookie_auth = false;
             $this->basic_auth = false;
             $this->publicMetadata = true;
+            $this->setPublicMetadata(true);
         }
         $this->setUpAdditionaParameters($input);
         $directoryHelper = new DirectoryHelper($path);
@@ -427,7 +426,6 @@ abstract class AbstractDownloadCommand extends Command
         $this->downloadHelper  = $this->getDownloadImplementation(new DownloadHelper($this->getBaseUrl()));
         
         $videos = $this->getVideos();
-        $videos = $this->filterVideos($videos,$input->getOptions());
         $this->downloadVideos($output,$videos);
         return Command::SUCCESS;
     }

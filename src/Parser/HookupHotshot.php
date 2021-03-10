@@ -17,6 +17,7 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
         $str = str_replace('_vids','',$str);
         return $str;
     }
+    
 
     protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker) {
         $sources = $this->getArrayFromCrawler($crawler->filter('.downloaddropdown li a'));
@@ -57,14 +58,20 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
 
 
     protected function parseOverviewVideo(Crawler &$crawler, Video &$video,MetadataObject &$metadata) {
-        $video->setUrl($crawler->filter('.item-thumb a')->attr('href'));
+        $url = $crawler->filter('.item-thumb a')->attr('href');
+        if($this->public) {
+            $url = str_replace('/trailers/','/members/scenes/',$url);
+            $url = str_replace('.html','_vids.html',$url); 
+    
+        }
+        $video->setUrl($url);
         $metadata->setSceneName($crawler->filter('.item-thumb a')->attr('title'));
         $thumb_url = $crawler->filter('.item-thumb a img')->attr('src0_3x');
         if( $thumb_url === null) {
             $thumb_url = $crawler->filter('.item-thumb a img')->attr('src');
         }
+
         $metadata->setThumbnailUrl($thumb_url);
-        //parse date from wordpress upload date
         $dt = new DateTime();
         $date = $crawler->filter('.item-info .date')->text();
         $date_exploded = explode('-',$date);

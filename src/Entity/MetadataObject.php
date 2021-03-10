@@ -1,7 +1,9 @@
 <?php
 namespace App\Entity;
 
+use App\Helper\LoggerHelper;
 use DateTime;
+use Throwable;
 
 class MetadataObject {
     private $actress;
@@ -191,6 +193,51 @@ class MetadataObject {
     public function setDescription($description) : self
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    public function combineMetadata(MetadataObject $metadataForeign) : self {
+        $methods = get_class_methods($this::class);
+        $sortedMethods = [];
+        foreach ($methods as $key => $method) {
+            if(str_starts_with($method,'set')) {
+                $getMethod = str_replace('set','get',$method);
+                if(in_array(str_replace('set','get',$method),$methods)) {
+                    $sortedMethods[$getMethod] = [
+                        'get' => $getMethod,
+                        'set' => $method
+                    ];
+                }
+            } elseif(str_starts_with($method,'get')) {
+                $setMethod = str_replace('get','set',$method);
+                if(in_array(str_replace('get','set',$method),$methods)) {
+                    $sortedMethods[$method] = [
+                        'get' => $method,
+                        'set' => $setMethod
+                    ];
+                }
+            }
+        }
+        foreach ($sortedMethods as $key => $getterSetterMethod) {
+            $getMethod = $getterSetterMethod['get'];
+            $setMethod = $getterSetterMethod['set'];
+            try {
+                $foreignValue = $metadataForeign->$getMethod();
+            } catch(Throwable $e) {
+                continue;
+            }
+            $thisValue = $this->$getMethod();
+            if(
+                ($thisValue === null && $foreignValue !== null) ||
+                (is_string($thisValue) && is_string($foreignValue) && $foreignValue !== "" && $thisValue !== $foreignValue) ||
+                (is_array($thisValue) && is_array($foreignValue) && count($thisValue) <= count($foreignValue) && count($foreignValue) > 0) ||
+                (is_bool($thisValue) && is_bool($foreignValue) && $thisValue !== $foreignValue)
+            ) {
+                $this->$setMethod($foreignValue);
+                LoggerHelper::writeToConsole("Updated ".json_encode($thisValue)." by setting ".json_encode($foreignValue)." for scene ".$this->getSceneName(),'verbose');
+            }
+        }
 
         return $this;
     }
