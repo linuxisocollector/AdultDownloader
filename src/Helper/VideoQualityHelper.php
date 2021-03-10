@@ -39,7 +39,7 @@ class VideoQualityHelper {
                 break;
         }
         if(array_key_exists($lowerQuality,$this->links)) {
-            throw new Exception("Duplicated Quality Key: $quality");
+            LoggerHelper::writeToConsole("Duplicated Quality Key: $quality",'error');
         }
         $this->links[$lowerQuality] = $url;
     }
