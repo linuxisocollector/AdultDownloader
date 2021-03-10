@@ -248,6 +248,10 @@ class Video
         return DirectoryHelper::getRealPath('videos').$this->getFilename();
     }
 
+    public function getSavedFilePath() : string {
+        return DirectoryHelper::getRealPath('videos').$this->getFileNameSaved();
+    }
+
     /**
      * Get the value of fileNameSaved
      */
