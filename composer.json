@@ -15,7 +15,8 @@
         "symfony/css-selector": "5.x-dev",
         "cocur/background-process": "dev-master",
         "haydenpierce/class-finder": "dev-master",
-        "php-ffmpeg/php-ffmpeg": "0.x-dev"
+        "php-ffmpeg/php-ffmpeg": "0.x-dev",
+        "gmostafa/php-graphql-oqm": "dev-master"
     },
     "autoload": {
         "psr-4": {"App\\": "src/"}

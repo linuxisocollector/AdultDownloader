@@ -45,6 +45,7 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
             ])) {
                 continue;
             }
+            $tags[] = $text;
         }
         $meta->setTags($tags);
         $video->setMetadata($meta);
