@@ -141,4 +141,12 @@ abstract class AbstractHTMLSingleParser  {
 
         return $this;
     }
+
+    protected function explodeAndTrim($string,$delimter) {
+        $stringArray = explode($delimter,$string);
+            foreach ($stringArray as $key => $value) {
+                $stringArray[$key] = trim($value);
+            }
+        return $stringArray;
+    }
 }

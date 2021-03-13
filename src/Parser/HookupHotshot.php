@@ -33,16 +33,15 @@ class HookupHotshot extends AbstractHTMLOverviewParser {
             $qualityPicker->addLink($quality_label,$source_crawler->attr('href'));
         }
         $meta = $video->getMetadata();
-        $meta->setActress($crawler->filter('.update_models a')->text());
+        $meta->setPerformers([$crawler->filter('.update_models a')->text()]);
         $tagsNodes = $this->getArrayFromCrawler($crawler->filter('.featuring ul li'));
         $tags = [];
         foreach ($tagsNodes as $key => $value) {
             $text = $value->text();
-            if(in_array($text,[
+            if(in_array($text,array_merge([
                 'Featuring:',
-                $meta->getActress(),
                 'Tags:'
-            ])) {
+            ],$meta->getPerformers()))) {
                 continue;
             }
             $tags[] = $text;

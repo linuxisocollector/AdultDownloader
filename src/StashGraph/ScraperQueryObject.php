@@ -23,6 +23,9 @@ class ScraperQueryObject extends QueryObject
     public function selectPerformer(ScraperPerformerArgumentsObject $argsObject = null)
     {
         $object = new ScraperSpecQueryObject("performer");
+        $object->selectSupportedScrapes();
+        $object->selectUrls();
+
         if ($argsObject !== null) {
             $object->appendArguments($argsObject->toArray());
         }

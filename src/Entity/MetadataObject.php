@@ -6,8 +6,7 @@ use DateTime;
 use Throwable;
 
 class MetadataObject {
-    private $actress;
-
+    private $performers;
     /** @var string[] */
     private $tags =[];
 
@@ -125,31 +124,24 @@ class MetadataObject {
 
         return $this;
     }
-
     /**
-     * Get the value of actress
+     * Undocumented function
      *
-     * @return string
+     * @return string[]
      */
-    public function getActress() : string 
-    {
-        return $this->actress;
+    public function getPerformers() {
+        return $this->performers;
     }
-
     /**
-     * Set the value of actress
+     * Undocumented function
      *
-     * @param string $actress
-     *
+     * @param string[] $performers
      * @return self
      */
-    public function setActress(string $actress) : self
-    {
-        $this->actress = $actress;
-
+    public function setPerformers($performers) :self {
+        $this->performers = $performers;
         return $this;
     }
-
     /**
      * Get the value of BehindeTheScenes
      *

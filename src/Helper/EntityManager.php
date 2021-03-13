@@ -40,6 +40,9 @@ class EntityManager {
         }
         
         /** @var AbstractDownloadCommand */
-        $download_class = new $download_classes[$downloadername]();
+        $downloadClass = new $download_classes[$downloadername]();
+        $downloadClass->loadOrCreatePage();
+
+        return $downloadClass;
     }
 }

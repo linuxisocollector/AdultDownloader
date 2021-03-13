@@ -36,6 +36,9 @@ class Video
     
     /** @Column(length=124) */
     private $downloaded_qualtity = false;
+
+    /** @Column(length=16,nullable=true)) */
+    private $openSubtitlesHash = false;
     
     /** @Column(type="object",nullable=true) */
     private $metadata;
@@ -43,6 +46,7 @@ class Video
     /** @Column(length=1024,nullable=true) */
     private $fileNameSaved = "";
 
+    
     private $download_url = "";
     /**
      * Get the value of id
@@ -65,7 +69,9 @@ class Video
     }
 
     /**
-     * Get the value of page
+     * Undocumented function
+     *
+     * @return Page
      */
     public function getPage()
     {
@@ -232,8 +238,19 @@ class Video
     public function getFilename() : string {
         $meta  = $this->getMetadata();
         $name = $meta->getSceneName();
-        if($meta->getActress() !== null && !str_contains($name,$meta->getActress())) {
-            $name .= " - ".$meta->getActress();
+        if(count($meta->getPerformers()) > 0) {
+            $wroteLead = false;
+            foreach ($meta->getPerformers() as $key => $performerName) {
+                if(!str_contains($name,$performerName)) {
+                    if(!$wroteLead) {
+                        $name .= " - ".$performerName;
+                        $wroteLead = true;
+                    } else {
+                        $name .= ", ".$performerName;
+                    }
+                    
+                }
+            }
         }
         if($meta->getDate() !== null) {
             $name .=" - ". $meta->getDate()->format('Y.m.d');
@@ -248,14 +265,20 @@ class Video
         return DirectoryHelper::getRealPath('videos').$this->getFilename();
     }
 
-    public function getSavedFilePath() : string {
+    public function getSavedFilePath() : ?string {
         return DirectoryHelper::getRealPath('videos').$this->getFileNameSaved();
     }
 
+
+    public function getPublicUrl() : string {
+
+        $parser = $this->getPage()->getCommandClass()->getMetadataParser();
+        return $parser->getPublicUrl($this);
+    }
     /**
      * Get the value of fileNameSaved
      */
-    public function getFileNameSaved() : string
+    public function getFileNameSaved() : ?string
     {
         return $this->fileNameSaved;
     }
@@ -268,6 +291,26 @@ class Video
     public function setFileNameSaved($fileNameSaved) : self
     {
         $this->fileNameSaved = $fileNameSaved;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of openSubtitlesHash
+     */
+    public function getOpenSubtitlesHash() : ?string
+    {
+        return $this->openSubtitlesHash;
+    }
+
+    /**
+     * Set the value of openSubtitlesHash
+     *
+     * @return self
+     */
+    public function setOpenSubtitlesHash($openSubtitlesHash) : self
+    {
+        $this->openSubtitlesHash = $openSubtitlesHash;
 
         return $this;
     }

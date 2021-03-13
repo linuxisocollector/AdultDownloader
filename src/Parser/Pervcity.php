@@ -29,7 +29,7 @@ class Pervcity extends AbstractHTMLOverviewParser{
         $metadata->setThumbnailUrl($crawler->filter('.videoPic a img')->attr('src'));
         $actress = $crawler->filter('.videoContent .update_models')->text();
         $actress = trim($actress);
-        $metadata->setActress($actress);
+        $metadata->setPerformers($this->explodeAndTrim($actress,','));
         $date_time = $crawler->filter('.videoContent .date')->text();
         $dt = new DateTime();
         $date_time_exploded = explode('-',$date_time);

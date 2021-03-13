@@ -1,0 +1,272 @@
+mutation SceneUpdate($input: SceneUpdateInput!) {
+  sceneUpdate(input: $input) {
+    ...SceneData
+    __typename
+  }
+}
+
+fragment SceneData on Scene {
+  id
+  checksum
+  oshash
+  title
+  details
+  url
+  date
+  rating
+  o_counter
+  organized
+  path
+  file {
+    size
+    duration
+    video_codec
+    audio_codec
+    width
+    height
+    framerate
+    bitrate
+    __typename
+  }
+  paths {
+    screenshot
+    preview
+    stream
+    webp
+    vtt
+    chapters_vtt
+    __typename
+  }
+  scene_markers {
+    ...SceneMarkerData
+    __typename
+  }
+  galleries {
+    ...GallerySlimData
+    __typename
+  }
+  studio {
+    ...StudioData
+    __typename
+  }
+  movies {
+    movie {
+      ...MovieData
+      __typename
+    }
+    scene_index
+    __typename
+  }
+  tags {
+    ...TagData
+    __typename
+  }
+  performers {
+    ...PerformerData
+    __typename
+  }
+  stash_ids {
+    endpoint
+    stash_id
+    __typename
+  }
+  __typename
+}
+
+fragment SceneMarkerData on SceneMarker {
+  id
+  title
+  seconds
+  stream
+  preview
+  scene {
+    id
+    __typename
+  }
+  primary_tag {
+    id
+    name
+    __typename
+  }
+  tags {
+    id
+    name
+    __typename
+  }
+  __typename
+}
+
+fragment GallerySlimData on Gallery {
+  id
+  checksum
+  path
+  title
+  date
+  url
+  details
+  rating
+  organized
+  image_count
+  cover {
+    ...SlimImageData
+    __typename
+  }
+  studio {
+    ...StudioData
+    __typename
+  }
+  tags {
+    ...TagData
+    __typename
+  }
+  performers {
+    ...PerformerData
+    __typename
+  }
+  scenes {
+    id
+    title
+    path
+    __typename
+  }
+  __typename
+}
+
+fragment SlimImageData on Image {
+  id
+  checksum
+  title
+  rating
+  organized
+  o_counter
+  path
+  file {
+    size
+    width
+    height
+    __typename
+  }
+  paths {
+    thumbnail
+    image
+    __typename
+  }
+  galleries {
+    id
+    path
+    title
+    __typename
+  }
+  studio {
+    id
+    name
+    image_path
+    __typename
+  }
+  tags {
+    id
+    name
+    __typename
+  }
+  performers {
+    id
+    name
+    favorite
+    image_path
+    __typename
+  }
+  __typename
+}
+
+fragment StudioData on Studio {
+  id
+  checksum
+  name
+  url
+  parent_studio {
+    id
+    checksum
+    name
+    url
+    image_path
+    scene_count
+    __typename
+  }
+  child_studios {
+    id
+    checksum
+    name
+    url
+    image_path
+    scene_count
+    __typename
+  }
+  image_path
+  scene_count
+  stash_ids {
+    stash_id
+    endpoint
+    __typename
+  }
+  __typename
+}
+
+fragment TagData on Tag {
+  id
+  name
+  image_path
+  scene_count
+  scene_marker_count
+  __typename
+}
+
+fragment PerformerData on Performer {
+  id
+  checksum
+  name
+  url
+  gender
+  twitter
+  instagram
+  birthdate
+  ethnicity
+  country
+  eye_color
+  height
+  measurements
+  fake_tits
+  career_length
+  tattoos
+  piercings
+  aliases
+  favorite
+  image_path
+  scene_count
+  stash_ids {
+    stash_id
+    endpoint
+    __typename
+  }
+  __typename
+}
+
+fragment MovieData on Movie {
+  id
+  checksum
+  name
+  aliases
+  duration
+  date
+  rating
+  director
+  studio {
+    ...StudioData
+    __typename
+  }
+  synopsis
+  url
+  front_image_path
+  back_image_path
+  scene_count
+  __typename
+}

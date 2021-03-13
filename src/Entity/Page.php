@@ -1,6 +1,7 @@
 <?php
 namespace App\Entity;
 
+use App\Helper\EntityManager;
 use Doctrine\Common\Collections\ArrayCollection;
 
 /** @Entity */
@@ -105,6 +106,11 @@ class Page
         $this->updated = $updated;
 
         return $this;
+    }
+
+
+    public function getCommandClass() {
+        return EntityManager::getDownloadClassByName($this->getName());
     }
 }
 
