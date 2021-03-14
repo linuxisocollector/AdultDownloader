@@ -258,6 +258,9 @@ class Video
         $extension = explode('.',$this->getDownloadUrl());
         $extension = end($extension);
         $extension = explode("?",$extension)[0];
+        if(str_contains($extension,'/')) {
+            $extension = "mp4";
+        }
         return $name.".".$extension;
     }
 

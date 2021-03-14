@@ -17,6 +17,7 @@ class MetadataObject {
 
     private $BehindeTheScenes = false;
     private $thumbnail_url;
+    private $publicSceneUrl;
 
     private $studio;
     private $description;
@@ -251,6 +252,26 @@ class MetadataObject {
     public function setStudio($studio) : self
     {
         $this->studio = $studio;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of publicSceneUrl
+     */
+    public function getPublicSceneUrl()
+    {
+        return $this->publicSceneUrl;
+    }
+
+    /**
+     * Set the value of publicSceneUrl
+     *
+     * @return self
+     */
+    public function setPublicSceneUrl($publicSceneUrl) : self
+    {
+        $this->publicSceneUrl = $publicSceneUrl;
 
         return $this;
     }

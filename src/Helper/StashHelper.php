@@ -27,6 +27,7 @@ class StashHelper {
     private $videos;
     private $tags = [];
     private $performers = [];
+    private $studios = [];
     /** @var \Symfony\Component\Console\Helper\ProgressBar */
     private $progressBar1;
 
@@ -44,7 +45,7 @@ class StashHelper {
         foreach ($videos as $key => $video) {
             
             if($video->getDownloadedVideo()) {
-                if($video->getOpenSubtitlesHash() === null) {
+                if($video->getOpenSubtitlesHash() === null || $video->getOpenSubtitlesHash() === '0000000000000000') {
                     throw new Exception('Not all Videos have a hash run operations:calculateOhash first');
                 }
                 $this->videos[$video->getOpenSubtitlesHash()] = $video;
@@ -55,6 +56,31 @@ class StashHelper {
         $this->loadStashTags();
         $this->loadStashPerformers();
         $this->loadPerformerScrapers();
+        $this->loadStudios();
+    }
+
+    private function loadStudios() {
+        $rootObject  = new RootQueryObject();
+        $rootObject
+            ->selectAllStudios()
+            ->selectId()
+            ->selectName();
+        $results = $this->client->runQuery($rootObject->getQuery(),true)->getResults();
+        foreach ($results['data']['allStudios'] as $key => $value) {
+            $this->studios[strtolower($value['name'])] = $value['id'];
+        }
+        //Check if one Studio can't get matched
+        $studiosNotMached = [];
+        $studioNames = array_keys($this->studios);
+        foreach ($this->videos as $key => $value) {
+            $videoStudioName = $value->getMetadata()->getStudio();
+            if(!in_array(strtolower($videoStudioName),$studioNames) && !in_array($videoStudioName,$studiosNotMached)) {
+                $studiosNotMached[] = $videoStudioName;
+            }
+        }
+        if(count($studiosNotMached) > 0) {
+            throw new Exception("The following Studios don't exist, please create them before continuing: ".implode(', ',$studiosNotMached));
+        }
     }
 
     private function initProgressBar($output,$countVideos) {
@@ -364,6 +390,7 @@ class StashHelper {
                     "cover_image" => $this->imageto64(DirectoryHelper::getRealPath('metadata').$video->getId().".jpg"),
                     "performer_ids" => $this->getOrCreatePerformers($metadata),
                     "tag_ids" => $this->getOrCreateTags($metadata->getTags()),
+                    "studio_id" => $this->studios[strtolower($metadata->getStudio())]
                     // "stash_ids" =>  []
                 ]
             ];
