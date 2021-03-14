@@ -20,22 +20,30 @@ class VideoQualityHelper {
         //sanitze input
         switch ($lowerQuality) {
             case '4k':
+            case '3840x2160':
                 $lowerQuality = 2160;
                 break;
             case '1080p':
+            case '1920x1080':
             case 'full hd':
                 $lowerQuality = 1080;
                 break;
             case '720p':
+            case '1280x720':
                 $lowerQuality = 720;
                 break;
             case '480p':
             case 'sd':
                 $lowerQuality = 480;
                 break;
+            case '640x360':
+            case 'mobile':
+                $lowerQuality = 360;
+                break;
             default:
-                $lowerQuality = 0;
                 LoggerHelper::writeToConsole("No Matching Quality Key found $lowerQuality",'Error');
+                $lowerQuality = 0;
+
                 break;
         }
         if(array_key_exists($lowerQuality,$this->links)) {
@@ -65,6 +73,7 @@ class VideoQualityHelper {
      */
     public function pickQuality(Video $video) {
         $maxQuality = $video->getMetadata()->getBehindeTheScenes() ? self::$BehindeTheScenesQuality : self::$SceneQuality;
+        krsort($this->links);
         foreach ($this->links as $quality => $link) {
             if($maxQuality >= $quality) {
                 $video->setDownloadUrl($link);
