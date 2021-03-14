@@ -66,7 +66,7 @@ class VideoQualityHelper {
     public function pickQuality(Video $video) {
         $maxQuality = $video->getMetadata()->getBehindeTheScenes() ? self::$BehindeTheScenesQuality : self::$SceneQuality;
         foreach ($this->links as $quality => $link) {
-            if($maxQuality <= $quality) {
+            if($maxQuality >= $quality) {
                 $video->setDownloadUrl($link);
                 $video->setDownloadedQualtity($quality);
                 return $video;

@@ -76,11 +76,15 @@ class CalculateOhashCommand extends Command {
         $em = EntityManager::get();
         foreach ($videos as $key => $video) {
             $path = $video->getSavedFilePath();
+            if($video->getOpenSubtitlesHash() !== '0000000000000000') {
+                continue;
+            }
             if(!file_exists($path) && !is_dir($path)) {
                 LoggerHelper::writeToConsole("File $path was not found",'warn');
                 continue;
             }
             $hash = Ohash::OpenSubtitlesHash($path);
+            dump($hash);
             $video->setOpenSubtitlesHash($hash);
             $em->persist($video);
             $this->progressBar1->advance();
@@ -89,7 +93,6 @@ class CalculateOhashCommand extends Command {
 
         LoggerHelper::writeToConsole('Calculated Ohash for all scenes','info');
         $this->progressBar1->finish();
-        $this->progressBar1->start();
     }
 
 

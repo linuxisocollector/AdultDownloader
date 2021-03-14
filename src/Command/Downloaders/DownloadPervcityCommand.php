@@ -37,8 +37,18 @@ class DownloadPervcityCommand extends AbstractDownloadCommand
     }
 
     protected function getVideoPath() {
-        return '/categories/movies_{num}_d.html';
+        return [
+            $this->getPageName() => '/search.php?cat[]=&site[]=1&cat[]=&ajaxcustom=&_=1615729060043&page={num}',
+            'AnalOverdose' => '/search.php?cat[]=&site[]=2&cat[]=&ajaxcustom=&_=1615729060043&page={num}',
+            'BangingBeauties' => '/search.php?cat[]=&site[]=3&cat[]=&ajaxcustom=&_=1615729060043&page={num}',
+            'OralOverdose' => '/search.php?cat[]=&site[]=4&cat[]=&ajaxcustom=&_=1615729060043&page={num}',
+            'ChocolateBJs' => '/search.php?cat[]=&site[]=5&cat[]=&ajaxcustom=&_=1615729060043&page={num}',
+            'UpHerAsshole' => '/search.php?cat[]=&site[]=5&cat[]=&ajaxcustom=&_=1615729060043&page={num}',
+        ];
+
     }
+
+    
 
     protected function lastPageReached($response) {
         if(strlen($response->getBody()) < 43000) {

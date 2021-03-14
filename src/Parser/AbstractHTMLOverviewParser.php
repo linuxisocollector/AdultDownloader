@@ -32,7 +32,7 @@ abstract class AbstractHTMLOverviewParser extends AbstractHTMLSingleParser {
     protected abstract function parseOverviewVideo(Crawler &$crawler, Video &$video,MetadataObject &$metadata);
 
 
-    public function ParsePage($html,$url) {
+    public function ParsePage($html,$url,$studio) {
         $videos = [];
         $filtered = $this->getVideoParentObject(new Crawler((string)$html));
         foreach ($filtered as $key => $value) {
@@ -45,6 +45,7 @@ abstract class AbstractHTMLOverviewParser extends AbstractHTMLSingleParser {
                 dump($url);
                 dump($video);
             }
+            $metadata->setStudio($studio);
             $video->setMetadata($metadata);
             $videos[] = $video;
         }

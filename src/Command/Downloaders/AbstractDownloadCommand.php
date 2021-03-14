@@ -118,7 +118,7 @@ abstract class AbstractDownloadCommand extends Command
      * Should return a string with the variable num in it e.x "/scenes/page/{num}/"
      * Num will be repalced with current page
      *
-     * @return string
+     * @return array
      */
     protected abstract function getVideoPath();
 
@@ -156,6 +156,20 @@ abstract class AbstractDownloadCommand extends Command
      * REST SHOULD NOT BE CHANGED WHEN IMPLEMENTING A NEW PAGE
      */
     
+     /**
+     * Undocumented function
+     *
+     * @param Video[] $videos
+     * @return Video[]
+     */
+     protected function deduplicate($videos) {
+      $compArr = [];
+      $videosOut = [];
+      foreach ($videos as $key => $video) {
+          $videosOut[$video->getUrl()] = $video;
+      }
+      return array_values($videosOut);
+     }
 
 
     /**
@@ -166,40 +180,45 @@ abstract class AbstractDownloadCommand extends Command
     protected function getVideos() {
         LoggerHelper::writeToConsole("Starting to fetch overview Pages",'info');
         $client = $this->downloadHelper->getClient();
-        $page_num = $this->getFirstPage();
         $bodies = [];
-        while(true) {
-            $url = str_replace('{num}',$page_num,$this->getVideoPath());
-            $body = DirectoryHelper::getCached($url);
-            if($body === false) {
-                try {
-                    $res = $client->request('GET',$url,[]);
-                    $body = $res->getBody();
-                    //save to cache
-                    file_put_contents(DirectoryHelper::getRealPath('cache').md5($url),$body);
-                    $this->lastPageReached($res);
-
-                    LoggerHelper::writeToConsole("Downloaded Overview Page: $page_num",'info');
-                    
-                    //echo "Downloaded Overview Page: $page_num\n";
-                } catch(Exception $ex) {
-                    LoggerHelper::writeToConsole("Possibly reached last page Pages: $page_num",'info');
+        foreach ($this->getVideoPath() as $studio => $videoPath) {
+            $page_num = $this->getFirstPage();
+            while(true) {
+                $url = str_replace('{num}',$page_num,$videoPath);
+                $body = DirectoryHelper::getCached($url);
+                if($body === false) {
                     break;
+                    try {
+                        $res = $client->request('GET',$url,[]);
+                        $body = $res->getBody();
+                        //save to cache
+                        file_put_contents(DirectoryHelper::getRealPath('cache').md5($url),$body);
+                        $this->lastPageReached($res);
+    
+                        LoggerHelper::writeToConsole("Downloaded Overview Page: $studio $page_num",'info');
+                        
+                        //echo "Downloaded Overview Page: $page_num\n";
+                    } catch(Exception $ex) {
+                        LoggerHelper::writeToConsole("Possibly reached last page Pages: $studio $page_num",'info');
+                        break;
+                    }
+                    sleep(2);
                 }
-                sleep(2);
+                $page_num++;
+                $bodies[$url] = [
+                    'body' => $body,
+                    'studio' => $studio
+                ];
             }
-            $page_num++;
-            $bodies[$url] = $body;
+
         }
         LoggerHelper::writeToConsole("Finished Downloading Overview Pages, Parsing Metadata now",'info');
         $metadata_parser = $this->getMetadataParser();
         $videos = [];
-        foreach ($bodies as $key => $html) {
-            $videos  = array_merge($videos, $metadata_parser->ParsePage($html,$key));
+        foreach ($bodies as $url => $response) {
+            $videos  = array_merge($videos, $metadata_parser->ParsePage($response['body'],$url,$response['studio']));
         }
-        /** @var Video[] $videos */
-        //Filter Videos so that not completly refetched Metatdata doesn't get overwritten
-        $videos = $this->filterVideos($videos,$this->options);
+        $videos = $this->deduplicate($videos);
 
         $em = EntityManager::get();
         $video_repository = $em->getRepository('App\Entity\Video');
@@ -209,9 +228,9 @@ abstract class AbstractDownloadCommand extends Command
         ]);
         //remove objects allready in db
         $new_vids = 0;
-        foreach ($videos as $key => $video) {
+        foreach ($videos as $url => $video) {
             $videoUrl = $video->getUrl();
-            foreach ($existing_vids as $key => $existing_vid) {
+            foreach ($existing_vids as $url => $existing_vid) {
                 if($existing_vid->getUrl() == $videoUrl) {
                     //to prevent overwritte from detail
                     $existing_vid->setMetadata($existing_vid->getMetadata()->combineMetadata($video->getMetadata()));
@@ -229,6 +248,7 @@ abstract class AbstractDownloadCommand extends Command
         $videos_saved = $video_repository->findBy([
             'page' => $this->page->getId(),
         ]);
+        $videos_saved = $this->filterVideos($videos_saved,$this->options);
         $video_count = count($videos_saved);
         LoggerHelper::writeToConsole("Found $video_count from which $new_vids are new",'info');
         return $videos_saved;
@@ -360,7 +380,6 @@ abstract class AbstractDownloadCommand extends Command
             }
         }
         foreach ($options as $key => $option) {
-
             if($option === null) {
                 continue;
             }
@@ -369,7 +388,10 @@ abstract class AbstractDownloadCommand extends Command
                 /** @var ISkipHandler */
                 $handler = new $commandClasses[$key]($videos,$option);
                 if($handler->doesHandle()) {
+                    $preCount = count($videos);
                     $videos = $handler->action();
+                    $diffCount = $preCount - count($videos);
+                    LoggerHelper::writeToConsole("$key skipped $diffCount Videos",'info');
                 }
                 if($handler instanceof ISkipHandlerInProgress) {
                     $this->in_progress_skipers[] = $handler;
@@ -427,6 +449,10 @@ abstract class AbstractDownloadCommand extends Command
         $this->downloadHelper  = $this->getDownloadImplementation(new DownloadHelper($this->getBaseUrl()));
         
         $videos = $this->getVideos();
+        if(count($videos) == 0) {
+            LoggerHelper::writeToConsole('Nothing to download','info');
+            return Command::SUCCESS;
+        }
         $this->downloadVideos($output,$videos);
         return Command::SUCCESS;
     }

@@ -228,7 +228,7 @@ class StashHelper {
             ->selectName();
         $results = $this->client->runQuery($rootObject->getQuery(),true)->getResults();
         foreach ($results['data']['allTagsSlim'] as $key => $value) {
-            $this->tags[$value['name']] = $value['id'];
+            $this->tags[strtolower($value['name'])] = $value['id'];
         }
     }
 
@@ -303,8 +303,8 @@ class StashHelper {
     private function getOrCreateTags($tags) {
         $tagIds = [];
         foreach ($tags as $key => $sceneTag) {
-            if(array_key_exists($sceneTag,$this->tags)) {
-                $tagIds[] = $this->tags[$sceneTag];
+            if(array_key_exists(strtolower($sceneTag),$this->tags)) {
+                $tagIds[] = $this->tags[strtolower($sceneTag)];
             } else {
                 $query = '
                 mutation tagCreate($input:TagCreateInput!) {
@@ -317,7 +317,7 @@ class StashHelper {
                         'name' => $sceneTag
                     ]
                 ])->getResults();
-                $this->tags[$sceneTag] = $result['data']['tagCreate']['id'];
+                $this->tags[strtolower($sceneTag)] = $result['data']['tagCreate']['id'];
                 $tagIds[] = $result['data']['tagCreate']['id'];
             }
         }

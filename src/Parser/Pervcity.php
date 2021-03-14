@@ -17,7 +17,7 @@ class Pervcity extends AbstractHTMLOverviewParser{
     }
 
     protected function getVideoParentObject(Crawler $html) {
-        $filterd = $this->getArrayFromCrawler($html->filter('.dvdsArea .videoBlock'));
+        $filterd = $this->getArrayFromCrawler($html->filter('.videoBlock'));
         
         return $filterd;
     }

@@ -18,6 +18,7 @@ class MetadataObject {
     private $BehindeTheScenes = false;
     private $thumbnail_url;
 
+    private $studio;
     private $description;
     
     function __construct()
@@ -223,13 +224,33 @@ class MetadataObject {
             if(
                 ($thisValue === null && $foreignValue !== null) ||
                 (is_string($thisValue) && is_string($foreignValue) && $foreignValue !== "" && $thisValue !== $foreignValue) ||
-                (is_array($thisValue) && is_array($foreignValue) && count($thisValue) <= count($foreignValue) && count($foreignValue) > 0) ||
-                (is_bool($thisValue) && is_bool($foreignValue) && $thisValue !== $foreignValue)
+                (is_array($thisValue) && is_array($foreignValue) && count($thisValue) <= count($foreignValue) && count($foreignValue) > 0 ) && count(array_diff($thisValue,$foreignValue)) > 0 ||
+                (is_bool($thisValue) && false)
             ) {
                 $this->$setMethod($foreignValue);
                 LoggerHelper::writeToConsole("Updated ".json_encode($thisValue)." by setting ".json_encode($foreignValue)." for scene ".$this->getSceneName(),'verbose');
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Get the value of studio
+     */
+    public function getStudio() : ?string
+    {
+        return $this->studio;
+    }
+
+    /**
+     * Set the value of studio
+     *
+     * @return self
+     */
+    public function setStudio($studio) : self
+    {
+        $this->studio = $studio;
 
         return $this;
     }

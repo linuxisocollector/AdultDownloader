@@ -40,7 +40,7 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
     }
 
     protected function getVideoPath() {
-        return $this->videoPath;
+        return [$this->getPageName() => $this->videoPath];
     }
 
     protected function lastPageReached($response) {
