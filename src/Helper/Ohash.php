@@ -8,7 +8,14 @@ namespace App\Helper;
 class Ohash
 {
     public static function OpenSubtitlesHash($path) {
+        setlocale(LC_CTYPE, "en_US.UTF-8");
         $path = escapeshellarg($path);
-        return trim(shell_exec("bash ".__DIR__."/ohash.bash $path 2>/dev/null"));
+        $out = shell_exec("osdb hash $path ");
+        $out_arr =explode(':',$out);
+        $out = trim(end($out_arr));
+        if($out == 'no such file or directory') {
+            LoggerHelper::writeToConsole("File not found: $path",'error');
+        }
+        return $out;
     }
 }

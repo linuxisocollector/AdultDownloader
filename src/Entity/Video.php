@@ -261,6 +261,9 @@ class Video
         if(str_contains($extension,'/')) {
             $extension = "mp4";
         }
+        if(str_contains('/',$name)) {
+            $name = str_replace('/',' ',$name);
+        }
         return $name.".".$extension;
     }
 

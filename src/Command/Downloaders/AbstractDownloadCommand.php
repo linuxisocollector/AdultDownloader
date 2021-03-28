@@ -187,7 +187,6 @@ abstract class AbstractDownloadCommand extends Command
                 $url = str_replace('{num}',$page_num,$videoPath);
                 $body = DirectoryHelper::getCached($url);
                 if($body === false) {
-                    break;
                     try {
                         $res = $client->request('GET',$url,[]);
                         $body = $res->getBody();
