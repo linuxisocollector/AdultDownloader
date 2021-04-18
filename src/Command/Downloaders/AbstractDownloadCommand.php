@@ -50,6 +50,7 @@ abstract class AbstractDownloadCommand extends Command
     
     protected $downloadVideosSetup;
     protected $saveEntities;
+    protected $skipOverviewDownload;
     protected $publicMetadata;
     private $in_progress_skipers = [];
     protected $options;
@@ -71,6 +72,8 @@ abstract class AbstractDownloadCommand extends Command
         $this->addOption('max-scene-quality',null,InputOption::VALUE_REQUIRED,'A Numerice maximal Height for a Scene to Download (Default: 1080)');
         $this->addOption('no-download','-d',InputOption::VALUE_NONE,'Dry Run without Downloading any files (Metadata Only)');
         $this->addOption('no-save',null,InputOption::VALUE_NONE,"Don't save fetched Metadata to Database");
+        $this->addOption('no-fetch-overview',null,InputOption::VALUE_NONE,"Don't Fetch Overview Pages (assume no new Videos)");
+
         $this->addOption('public','-p',InputOption::VALUE_NONE,'Use Public Url to get Metadata when "no-download" is active');
         $this->addAdditonalArguments();
     }
@@ -187,6 +190,10 @@ abstract class AbstractDownloadCommand extends Command
                 $url = str_replace('{num}',$page_num,$videoPath);
                 $body = DirectoryHelper::getCached($url);
                 if($body === false) {
+                    if($this->skipOverviewDownload) {
+                        LoggerHelper::writeToConsole("Didn't download Overview Page",'info');
+                        break;
+                    }
                     try {
                         $res = $client->request('GET',$url,[]);
                         $body = $res->getBody();
@@ -409,6 +416,7 @@ abstract class AbstractDownloadCommand extends Command
         $this->loadOrCreatePage();
         $this->saveEntities = !$input->getOption('no-save');
         $this->downloadVideosSetup = !$input->getOption('no-download');
+        $this->skipOverviewDownload = $input->getOption('no-fetch-overview');
         if($input->getOption('public')) {
             if($this->downloadVideosSetup) {
                 LoggerHelper::writeToConsole("You can't fetch Public metadata and download try the option --no-download",'error');

@@ -38,7 +38,15 @@ class VideoQualityHelper {
                 break;
             case '640x360':
             case 'mobile':
+            case '360p':
                 $lowerQuality = 360;
+                break;
+            case '480x240':
+            case '240p':
+                $lowerQuality = 240;
+                break;
+            case '144p':
+                $lowerQuality = 144;
                 break;
             default:
                 LoggerHelper::writeToConsole("No Matching Quality Key found $lowerQuality",'Error');

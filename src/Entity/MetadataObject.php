@@ -6,7 +6,7 @@ use DateTime;
 use Throwable;
 
 class MetadataObject {
-    private $performers;
+    private $performers = [];
     /** @var string[] */
     private $tags =[];
 
@@ -84,7 +84,7 @@ class MetadataObject {
      *
      * @return string
      */
-    public function getDate() : DateTime 
+    public function getDate() : ?DateTime 
     {
         return $this->date;
     }
