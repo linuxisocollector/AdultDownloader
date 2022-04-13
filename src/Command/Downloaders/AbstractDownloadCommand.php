@@ -134,7 +134,7 @@ abstract class AbstractDownloadCommand extends Command
      * @return void
      * @throws Exception
      */
-    protected abstract function lastPageReached(Response $html);
+    protected abstract function lastPageReached(Response $html,$page_num);
 
 
 
@@ -197,9 +197,11 @@ abstract class AbstractDownloadCommand extends Command
                     try {
                         $res = $client->request('GET',$url,[]);
                         $body = $res->getBody();
+                        
+                    
                         //save to cache
                         file_put_contents(DirectoryHelper::getRealPath('cache').md5($url),$body);
-                        $this->lastPageReached($res);
+                        $this->lastPageReached($res,$page_num);
     
                         LoggerHelper::writeToConsole("Downloaded Overview Page: $studio $page_num",'info');
                         

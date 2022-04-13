@@ -50,7 +50,7 @@ class DownloadPervcityCommand extends AbstractDownloadCommand
 
     
 
-    protected function lastPageReached($response) {
+    protected function lastPageReached($response,$page_num) {
         if(strlen($response->getBody()) < 43000) {
             throw new Exception('Reached end');
         }

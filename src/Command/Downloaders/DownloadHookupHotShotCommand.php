@@ -43,7 +43,7 @@ class DownloadHookupHotShotCommand extends AbstractDownloadCommand
         return [$this->getPageName() => $this->videoPath];
     }
 
-    protected function lastPageReached($response) {
+    protected function lastPageReached($response,$page_num) {
         if(str_contains($response->getBody(),'Nothing found here.')) {
             throw new Exception('Reached end');
         }

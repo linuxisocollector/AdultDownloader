@@ -18,12 +18,15 @@ class Aria2 implements AbstractDownloader, ICookie, IBasicAuth {
         $cmd = '/usr/bin/aria2c --enable-rpc --rpc-listen-port 6800';
         $outputfile = 'aria2.output';
         $pidfile = "look_pid";
-        $process = exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $outputfile, $pidfile));
+        $process = exec(sprintf("%s > %s 2>&1 & echo $! > %s", $cmd, $outputfile, $pidfile));
         $this->aria2 = new \Aria2('http://127.0.0.1:6800/jsonrpc'); 
         $this->progressHelper = $progressHelper;
-        register_shutdown_function('App\Downloaders\Aria2::killprocess');
     }
 
+    public function __destruct()
+    {
+        posix_kill ((int)rtrim(file_get_contents('look_pid')), 0 );
+    }
     public function setCookies(CookieHelper $cookies) {
         $this->additonalHeader[] = $cookies->getCookieHeaderString();
     }
@@ -34,7 +37,6 @@ class Aria2 implements AbstractDownloader, ICookie, IBasicAuth {
     }
 
     public static function killprocess() {
-        posix_kill ((int)rtrim(file_get_contents('look_pid')), 0 );
         
     }
 

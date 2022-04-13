@@ -30,6 +30,8 @@ class CookieHelper {
         }
         $this->simpleCookieArray = $cookies;
         $url = str_replace('https://','',$base_url);
+        $url = str_replace('http://','',$base_url);
+
         $url = explode('/',$url);
         $this->cookies = CookieJar::fromArray($cookies,$url[0]);
     }

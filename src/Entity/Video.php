@@ -261,9 +261,13 @@ class Video
         if(str_contains($extension,'/')) {
             $extension = "mp4";
         }
+        if(str_contains($extension,'m3u8')) {
+            $extension = "ts";
+        }
         if(str_contains('/',$name)) {
             $name = str_replace('/',' ',$name);
         }
+        if($name )
         return $name.".".$extension;
     }
 

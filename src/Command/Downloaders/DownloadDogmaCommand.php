@@ -3,34 +3,35 @@
 namespace App\Command\Downloaders;
 
 use App\Downloaders\Aria2;
+use App\Downloaders\Streamlink;
 use App\Helper\ProgressHelper;
-use App\Parser\Pervcity;
-use App\Parser\Swallowed;
+use App\Parser\Dogma;
 use Exception;
 
-class DownloadSwallowedCommand extends AbstractDownloadCommand
+/** @package App\Command */
+class DownloadDogmaCommand extends AbstractDownloadCommand
 {
-    private $baseUrl = "https://members.swallowed.com";
-    protected static $defaultName = 'download:swallowed';
+    private $videoPath = 'search?id_feature=17,18,16&search_feature=%E6%9C%88%E9%A1%8D%E3%83%97%E3%83%A9%E3%83%B3%20-%20%E3%83%95%E3%82%9A%E3%83%AC%E3%83%9F%E3%82%A2%E3%83%A0&p={num}';
+    protected static $defaultName = 'download:dogma';
 
     public function setPublicMetadata(bool $status) {
-        $this->baseUrl = "https://tour.swallowed.com";
     }
 
     protected function addAdditonalArguments() {
         $this->requireCookieFile();
     }
 
+
     public static function getPageName() {
-        return 'Swallowed';
+        return 'Dogma';
     }
 
     public function getPageId() {
-        return 3;
+        return 5;
     }
 
     public function getBaseUrl() {
-        return $this->baseUrl;
+        return 'http://www.dogma.co.jp/';
     }
 
     protected function getFirstPage() { 
@@ -38,28 +39,22 @@ class DownloadSwallowedCommand extends AbstractDownloadCommand
     }
 
     protected function getVideoPath() {
-        return [
-            $this->getPageName() => '/videos?page={num}',
-        ];
-
+        return [$this->getPageName() => $this->videoPath];
     }
 
-    
-
     protected function lastPageReached($response,$page_num) {
-        if(strlen($response->getBody()) < 47000) {
-            //@todo FinishedException type
+        if($page_num > 17) {
             throw new Exception('Reached end');
         }
     }
 
     public function getMetadataParser() {
-        return new Swallowed($this->saveEntities,$this->downloadVideosSetup,$this->publicMetadata);
+        return new Dogma($this->saveEntities,$this->downloadVideosSetup,$this->publicMetadata);
     }
 
 
     protected function loadFileDownloader(ProgressHelper $progressHelper) {
-        return new Aria2($progressHelper);
+        return new Streamlink($progressHelper);
     }
 }
 

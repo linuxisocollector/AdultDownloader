@@ -17,11 +17,13 @@ class Adultdoorway extends AbstractHTMLOverviewParser {
     }
     
 
-    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker) {
+    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker,$client) {
         $sources = $this->getArrayFromCrawler($crawler->filter('#download_options_block .dropdown li a'));
         foreach ($sources as $key => $source_crawler) {
-            $quality_label = explode(' ',$source_crawler->text())[0];            
-            $qualityPicker->addLink($quality_label,$source_crawler->attr('href'));
+            $quality_label = explode(' ',$source_crawler->text())[0];
+            $href = $source_crawler->attr('href');
+            $href = parse_url($href)['path'];
+            $qualityPicker->addLink($quality_label,$href);
         }
         $meta = $video->getMetadata();
         $meta->setDescription($crawler->filter('.update_description')->text());
@@ -33,7 +35,6 @@ class Adultdoorway extends AbstractHTMLOverviewParser {
         $filterd = $this->getArrayFromCrawler($crawler->filter('.category_listing_wrapper_updates .update_details'));
         return $filterd;
     }
-
 
     protected function parseOverviewVideo(Crawler &$crawler, Video &$video,MetadataObject &$metadata) {
         $url = $crawler->filter('a')->first()->attr('href');

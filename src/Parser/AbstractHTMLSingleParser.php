@@ -10,6 +10,7 @@ use App\Helper\DirectoryHelper;
 use App\Helper\VideoQualityHelper;
 use DateTime;
 use Exception;
+use GuzzleHttp\Client;
 use Symfony\Component\DomCrawler\Crawler;
 
 abstract class AbstractHTMLSingleParser  {
@@ -32,7 +33,7 @@ abstract class AbstractHTMLSingleParser  {
      * @param VideoQualityHelper $qualityPicker
      * @return Video
      */
-    protected abstract function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker);
+    protected abstract function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker, $client);
 
 
     public abstract function getPublicUrl(Video $video);
@@ -54,7 +55,7 @@ abstract class AbstractHTMLSingleParser  {
         $crawler = new Crawler($body);
         $video->setGrabbedHtml(true);
         $video->setFetchedTime(new DateTime());
-        $this->parseScenePageDetail($crawler,$video,$fileDownloader,$qualityPicker);
+        $this->parseScenePageDetail($crawler,$video,$fileDownloader,$qualityPicker,$client);
         $this->isBehindeTheScences($video);
         if($this->download) {
             $video = $qualityPicker->pickQuality($video);

@@ -40,7 +40,7 @@ class Swallowed extends AbstractHTMLOverviewParser{
         $metadata->setDate($dt);
     }
 
-    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker) {
+    protected function parseScenePageDetail(Crawler &$crawler, Video &$video,AbstractDownloader $fileDownloader,VideoQualityHelper &$qualityPicker,$client) {
         $tags_crawlers = $this->getArrayFromCrawler($crawler->filter('.tags a'));
         $tags = [];
         foreach ($tags_crawlers as $key => $tag_crawler) {
